@@ -1,0 +1,135 @@
+# Windows desktop build. Runs for version tags (v*) and manual dispatch.
+# The updater private key is optional: when TAURI_SIGNING_PRIVATE_KEY is unset
+# the build skips updater artifacts so it still produces tdv.exe and the NSIS
+# installer. App config (CSP, cloud-save URL, updater endpoint) is not modified.
+
+name: Build Windows
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Release tag to publish (v*). Required when this run is not already on a v* tag."
+        required: false
+        type: string
+
+permissions:
+  contents: write
+
+concurrency:
+  group: build-windows-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  windows:
+    name: Build tdv.exe
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: lts/*
+          cache: npm
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache Cargo
+        uses: swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri
+
+      - name: Install npm dependencies
+        run: npm ci
+        env:
+          PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: "1"
+
+      - name: Build exe and NSIS installer
+        shell: bash
+        env:
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+        run: |
+          set -euo pipefail
+          # --bundles nsis skips the MSI/WiX installer. The standalone exe is
+          # still written to src-tauri/target/release/tdv.exe.
+          # createUpdaterArtifacts is true in tauri.conf.json and the bundler
+          # refuses to run without a minisign private key. Override it only
+          # for this invocation when the secret is empty; the file on disk
+          # is not edited.
+          if [ -n "${TAURI_SIGNING_PRIVATE_KEY}" ]; then
+            echo "Signing key present; building NSIS with updater artifacts."
+            npx tauri build --ci --bundles nsis
+          else
+            echo "No signing key; building NSIS without updater artifacts."
+            npx tauri build --ci --bundles nsis \
+              --config '{"bundle":{"createUpdaterArtifacts":false}}'
+          fi
+
+      - name: Collect release assets
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p release-assets
+          cp src-tauri/target/release/tdv.exe release-assets/tdv.exe
+          shopt -s nullglob
+          found=0
+          for f in src-tauri/target/release/bundle/nsis/*-setup.exe; do
+            base=$(basename "$f")
+            cp "$f" "release-assets/${base// /.}"
+            found=1
+          done
+          if [ "$found" -ne 1 ]; then
+            echo "NSIS setup exe was not produced:"
+            ls -la src-tauri/target/release/bundle/nsis || true
+            exit 1
+          fi
+          ls -lh release-assets
+
+      - name: Resolve release tag
+        id: rel
+        shell: bash
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          INPUT_TAG: ${{ github.event.inputs.tag }}
+          REF: ${{ github.ref }}
+          REF_NAME: ${{ github.ref_name }}
+        run: |
+          set -euo pipefail
+          if [ "$EVENT_NAME" = "workflow_dispatch" ] && [ -n "${INPUT_TAG}" ]; then
+            TAG="$INPUT_TAG"
+          elif [[ "$REF" == refs/tags/v* ]]; then
+            TAG="$REF_NAME"
+          else
+            echo "No v* tag to publish. Dispatch this workflow from a v* tag, or pass the tag input."
+            exit 1
+          fi
+          case "$TAG" in
+            v*) ;;
+            *) echo "Release tag must match v* (got: $TAG)"; exit 1 ;;
+          esac
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+
+      - name: Publish GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.rel.outputs.tag }}
+          name: ${{ steps.rel.outputs.tag }}
+          target_commitish: ${{ github.sha }}
+          fail_on_unmatched_files: true
+          files: |
+            release-assets/tdv.exe
+            release-assets/*-setup.exe
+          body: |
+            Windows build of Tower Defence V ${{ steps.rel.outputs.tag }}.
+
+            - `tdv.exe` is the standalone game.
+            - `*-setup.exe` is the NSIS installer.
+
+            Updater signature files are produced only when the `TAURI_SIGNING_PRIVATE_KEY` secret is set. This workflow does not change the app's updater endpoint or cloud-save URL.

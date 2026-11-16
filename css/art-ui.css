@@ -1,0 +1,86 @@
+/* ============================================================
+   art-ui.css — ART V2 skin. Everything is scoped to body.artv2,
+   which js/art.js sets only when ART_V2 is on, so turning the flag
+   off restores the original Ember Watch look untouched.
+   Same palette as the sprites: violet-black ink outlines, warm
+   parchment text, ember for actions, gold only for money.
+   Pixel rules: square corners, 2px stepped borders (notched corners
+   made with box-shadow), hard 2px drop shadows, no blur, no gradients
+   wider than a 2-tone bevel, nearest-neighbour scaling everywhere.
+   ============================================================ */
+body.artv2{
+  --ink:#1b1526; --bg:#140f1c; --edge:#1b1526; --line:#1b1526;
+  --slate:#2a2238; --slate2:#342a44; --steel:#4d4160; --panel2:#2a2238; --plate-2:#2a2238;
+  --hi:#5e5076; --hair:#4d4160; --hair-hi:#8a7aa6;
+  --txt:#f4ead6; --dim:#c9b9a6; --sub:#d8cab4; --label:#a493b2;
+  --ember:#ff7a33; --ember2:#ffb347; --ember-deep:#c2410c;
+  --gold:#f2c14a; --gold2:#ffe28a;
+  --cyan:#4ad8ff; --void:#b07aff; --red:#ff5a4a; --grn:#8ad25a;
+  --weave:none;
+  --plate:#2a2238;
+  --rim:inset 0 2px 0 #4d4160;
+  --pxb:0 -2px 0 0 var(--ink),0 2px 0 0 var(--ink),-2px 0 0 0 var(--ink),2px 0 0 0 var(--ink);
+  --bevel:inset 2px 2px 0 0 #4d4160,inset -2px -2px 0 0 #1f1830;
+  --drop:0 4px 0 0 #0d0914;
+}
+body.artv2 canvas,body.artv2 img{image-rendering:pixelated;image-rendering:crisp-edges}
+body.artv2 .panel,body.artv2 .stat,body.artv2 #towerbar,body.artv2 #sidepanel,body.artv2 #twrInfo,body.artv2 #bossbar,body.artv2 #speedBtns{
+  background:var(--plate);border:0;border-radius:0;
+  box-shadow:var(--pxb),var(--bevel),var(--drop)}
+body.artv2 #towerbar:before{left:6px;right:6px;top:-4px;height:2px;background:var(--ember)}
+body.artv2 .stat{text-shadow:2px 2px 0 var(--ink);margin:2px}
+body.artv2 #waveWrap{background:#3a2428;box-shadow:var(--pxb),inset 2px 2px 0 0 #6a3a2a,inset -2px -2px 0 0 #24161a,var(--drop)}
+body.artv2 #stCash{color:var(--gold2)} body.artv2 #stLives{color:#ff8a7a}
+/* buttons: a chunky key with a 2px top light and a 2px foot */
+body.artv2 .btn{background:#3e3350;color:var(--txt);border:0;border-radius:0;margin:2px;
+  --ring:#5e5076;box-shadow:var(--pxb),inset 0 2px 0 0 #5e5076,inset 0 -2px 0 0 #241c32,0 4px 0 0 #0d0914;
+  text-shadow:2px 2px 0 var(--ink);transition:none}
+body.artv2 .btn:hover{background:#4a3e60;color:var(--ember2);transform:translateY(-2px);
+  box-shadow:var(--pxb),inset 0 2px 0 0 #6e6088,inset 0 -2px 0 0 #2a2038,0 6px 0 0 #0d0914}
+body.artv2 .btn:active{transform:translateY(2px);box-shadow:var(--pxb),inset 0 2px 0 0 #1f1830,0 2px 0 0 #0d0914}
+body.artv2 .btn.gold{background:#d8601e;color:#fff4e0;box-shadow:var(--pxb),inset 0 2px 0 0 #ff9a4d,inset 0 -2px 0 0 #8a300a,0 4px 0 0 #0d0914}
+body.artv2 .btn.gold:hover{background:#ee7428;color:#fff}
+body.artv2 .btn.red{background:#6a2430;color:#ffd0c8;box-shadow:var(--pxb),inset 0 2px 0 0 #a83a46,inset 0 -2px 0 0 #3a121a,0 4px 0 0 #0d0914}
+body.artv2 .btn:disabled{transform:none}
+body.artv2 #speedBtns{padding:4px;gap:4px}
+body.artv2 #speedBtns .btn{margin:0;box-shadow:inset 0 2px 0 0 #5e5076,inset 0 -2px 0 0 #241c32,0 0 0 2px var(--ink)}
+body.artv2 #speedBtns .btn.on{background:#5a2c14;color:var(--ember2);box-shadow:inset 0 2px 0 0 #1f1830,0 0 0 2px var(--ember)}
+/* tower dock: slots are little framed cards; the icon sits on a pixel plinth */
+body.artv2 .twr-slot{background:#342a44;border:0;margin:2px;box-shadow:var(--pxb),inset 0 2px 0 0 #4d4160,inset 0 -2px 0 0 #241c32;transition:none}
+body.artv2 .twr-slot:hover{transform:translateY(-2px);box-shadow:var(--pxb),inset 0 2px 0 0 #6e6088,0 4px 0 0 #0d0914}
+body.artv2 .twr-slot.sel{background:#4a2c1c;box-shadow:0 -2px 0 0 var(--ember),0 2px 0 0 var(--ember),-2px 0 0 0 var(--ember),2px 0 0 0 var(--ember),inset 0 2px 0 0 #7a4022}
+body.artv2 .twr-slot canvas{background:linear-gradient(#00000000 70%,#1f1830 70%,#1f1830 100%)}
+body.artv2 .twr-slot .nm{color:var(--sub);text-shadow:1px 1px 0 var(--ink)}
+body.artv2 .twr-slot .hk{background:var(--ink);border:0;color:var(--ember2)}
+body.artv2 .twr-slot.empty{background:#1f1830;box-shadow:inset 0 0 0 2px #342a44;opacity:.55}
+/* boss bar */
+body.artv2 #bossbar{background:#3a1c26;box-shadow:var(--pxb),inset 2px 2px 0 0 #6a2c3a,inset -2px -2px 0 0 #200e14,var(--drop)}
+body.artv2 #bossIcon{background:#1b1526;border:0;box-shadow:0 0 0 2px #6a2c3a}
+body.artv2 .bossTrack{background:var(--ink);border:0;box-shadow:0 0 0 2px var(--ink),inset 0 2px 0 0 #000}
+body.artv2 #bossFill{background:#e8364a;box-shadow:inset 0 2px 0 0 #ff7a86,inset 0 -2px 0 0 #8a1428}
+body.artv2 #bossShieldFill{background:#4aa8ff;box-shadow:inset 0 2px 0 0 #a4d8ff}
+/* side + info panels */
+body.artv2 #tiHead,body.artv2 #spTitle{background:#342a44;border-bottom:2px solid var(--ink);box-shadow:inset 0 2px 0 0 var(--ember)}
+body.artv2 .sp-sec{border-top:2px solid #342a44}
+body.artv2 .sp-sec h4:before{box-shadow:none}
+body.artv2 .sp-sec h4:after{height:2px;background:#342a44}
+body.artv2 .statrow:nth-child(odd),body.artv2 .statgrid div{background:#ffffff08}
+body.artv2 .statrow b,body.artv2 .statgrid b{color:var(--ember2)}
+body.artv2 ::-webkit-scrollbar-track{background:var(--ink)}
+body.artv2 ::-webkit-scrollbar-thumb{background:#4d4160;border:2px solid var(--ink);box-shadow:none}
+body.artv2 .coin{border-radius:0;background:var(--gold);
+  box-shadow:inset 2px 2px 0 0 #fff4c0,inset -2px -2px 0 0 #b8801e,0 0 0 1px var(--ink);
+  clip-path:polygon(25% 0,75% 0,100% 25%,100% 75%,75% 100%,25% 100%,0 75%,0 25%)}
+/* toasts + upgrade lanes */
+body.artv2 .toast{background:#2a2238;border:0;border-left:4px solid var(--ember);border-radius:0;
+  box-shadow:var(--pxb),inset 0 2px 0 0 #4d4160,var(--drop);text-shadow:1px 1px 0 var(--ink)}
+body.artv2 .toast.good{border-left-color:var(--grn)}
+body.artv2 .toast i{transform:none;width:6px;height:6px;box-shadow:0 0 0 2px var(--ink)}
+body.artv2 .lane{background:#342a44;border:0;margin:10px 2px 2px;box-shadow:var(--pxb),inset 0 2px 0 0 #4d4160}
+body.artv2 .up{background:#241c32;border:0;box-shadow:0 0 0 2px var(--ink);margin:6px 2px 0;transition:none}
+body.artv2 .up .dot{border:0;box-shadow:0 0 0 2px var(--ink)}
+body.artv2 .up.done{background:#24301e;box-shadow:0 0 0 2px var(--ink),inset 0 2px 0 0 #3a5a2a}
+body.artv2 .up.done .dot{box-shadow:0 0 0 2px var(--ink)}
+body.artv2 .up.next{background:#4a2c1c;box-shadow:0 0 0 2px var(--ember),inset 0 2px 0 0 #7a4022}
+body.artv2 .up.next .dot{box-shadow:0 0 0 2px var(--ink)}
+body.artv2 .up.next:hover{background:#5a3420;box-shadow:0 0 0 2px var(--ember2),inset 0 2px 0 0 #8a4a26}

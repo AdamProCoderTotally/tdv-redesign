@@ -1,0 +1,57 @@
+/* TDV Tower Creator */
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#141210;color:#efe6d2;font-family:'Silkscreen','Pixelify Sans',Consolas,monospace;font-size:13px}
+header{display:flex;align-items:center;gap:18px;padding:10px 16px;background:#181410;border-bottom:3px solid #0c0a07;flex-wrap:wrap}
+.brand{font-size:18px;color:#f5c56a;letter-spacing:2px}
+#tabs{display:flex;gap:6px;flex:1}
+button{font-family:inherit;cursor:pointer}
+.tab{background:#241e16;border:2px solid #0c0a07;color:#bfb193;padding:6px 14px;font-size:12px}
+.tab.on{background:#3a2f1c;color:#f5c56a;border-color:#8a6f3c}
+.actions{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+#status{color:#8ce89a;font-size:11px;min-width:70px;text-align:right}
+.btn{background:#241e16;border:2px solid #0c0a07;box-shadow:inset 0 0 0 1px #4a3f2c;color:#efe6d2;padding:6px 12px;font-size:12px}
+.btn:hover{background:#2e261c}
+.btn.gold{background:#5a451c;color:#ffe9a0;border-color:#8a6f3c}
+.btn.red{background:#4a2018;color:#f0a494;border-color:#8a4132}
+.btn.wide{width:100%;margin-top:8px}
+.btn.tgl.on{background:#3a5a2c;color:#d8f0c0;border-color:#6a9a4c}
+main{padding:14px;max-width:1750px;margin:0 auto}
+.tabpage{display:none}.tabpage.show{display:block}
+.cols{display:flex;gap:14px;align-items:flex-start}
+.side{flex:0 0 300px;display:flex;flex-direction:column;gap:12px}
+.panel{background:#181410;border:3px solid #0c0a07;box-shadow:inset 0 0 0 2px #2c241a;padding:12px 14px}
+.panel.grow{flex:1;min-width:420px}
+.empty{color:#6a6250;padding:30px;text-align:center}
+h3{color:#c9a86a;font-size:13px;letter-spacing:1px;margin:8px 0;border-bottom:1px solid #2c241a;padding-bottom:4px}
+h3:first-child{margin-top:0}
+.frow{display:flex;align-items:center;gap:8px;margin:6px 0;flex-wrap:wrap}
+.frow label{flex:0 0 120px;color:#bfb193;font-size:11px}
+.frow input[type=text],.frow input[type=number],.frow select{background:#100d0a;border:2px solid #0c0a07;
+  box-shadow:inset 0 0 0 1px #4a3f2c;color:#efe6d2;padding:5px 8px;font-family:inherit;font-size:12px;width:160px}
+.frow input[type=color]{width:34px;height:26px;padding:0;border:2px solid #0c0a07;background:none;cursor:pointer}
+.hint{color:#6a6250;font-size:10px;line-height:1.6;margin-top:4px}
+.toolrow,.pixtools{display:flex;gap:6px;flex-wrap:wrap;margin:6px 0}
+.btnrow{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px}
+.warn{color:#f0a494;font-size:11px;margin-top:8px;min-height:14px}
+canvas.pix{image-rendering:pixelated;background:#100d0a;border:3px solid #0c0a07;touch-action:none;cursor:crosshair}
+.objlist{display:flex;flex-direction:column;gap:6px;margin-bottom:6px}
+.objlist button{text-align:left}
+.objlist button.sel{background:#3a2f1c;color:#f5c56a}
+.objlist button small{color:#6a6250;float:right}
+.palette{display:grid;grid-template-columns:repeat(12,22px);gap:3px;margin:8px 0}
+.palette div{width:22px;height:22px;border:2px solid #0c0a07;cursor:pointer}
+.palette div.sel{outline:2px solid #f5c56a}
+.uprow{background:#100d0a;border:2px solid #0c0a07;padding:8px;margin:8px 0}
+.fxgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:4px 14px;margin-top:6px}
+.fxgrid .frow{margin:2px 0}
+.fxgrid .frow label{flex-basis:118px;font-size:10px}
+.wavebox{background:#100d0a;border:2px solid #0c0a07;padding:10px;margin:10px 0}
+.wavehead{display:flex;align-items:center;gap:10px;margin-bottom:6px}
+.wavehead b{color:#f5c56a}
+.wavehead .sum{color:#6a6250;font-size:10px;flex:1}
+.grprow{display:flex;gap:6px;align-items:center;margin:4px 0;flex-wrap:wrap}
+.grprow select,.grprow input{background:#100d0a;border:2px solid #0c0a07;color:#efe6d2;font-family:inherit;font-size:11px;padding:4px 6px}
+.grprow select{min-width:160px}
+.grprow input{width:64px}
+.grprow .lbl{color:#6a6250;font-size:10px;width:44px}
+textarea{width:100%;background:#100d0a;border:2px solid #0c0a07;color:#8ce89a;font-family:Consolas,monospace;font-size:10px;padding:8px;resize:vertical}

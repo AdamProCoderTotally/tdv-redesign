@@ -1,0 +1,17 @@
+dist/
+node_modules/
+src-tauri/target/
+src-tauri/gen/
+src-tauri/keys/
+updates/
+content/
+
+# Signing keys. The updater private key lives in src-tauri/keys/ and is
+# never committed; these patterns catch a key dropped anywhere else.
+*.key
+*.pub
+
+# Cloudflare worker config and local state. Not part of the desktop app.
+wrangler.toml
+.wrangler/
+cloud/

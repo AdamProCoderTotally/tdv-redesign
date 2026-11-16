@@ -1,0 +1,19 @@
+/* Pixel-asset geometry only. The EMBER WATCH theme, layout and colour live in
+   style.css; this file just makes the baked SVG artwork (crest + nav icons)
+   render at integer-grid sizes without flex compression. Kept separate so the
+   sprite geometry can be tuned without touching the design system. */
+
+/* Generic button glyphs stay square and never compress in a tight flex row. */
+.btn svg{flex-shrink:0;aspect-ratio:1;object-fit:contain}
+
+/* The V crest is an inline SVG with a 96px intrinsic box; let it fill whatever
+   plate owns it (brandMark 28, profile icon 40, hero crest 64). The wrapper has
+   to claim the full grid cell first or the percentage has nothing to resolve to. */
+.gt-v{display:block;width:100%;height:100%}
+.pixelCrest{display:block;width:100%;height:100%;image-rendering:pixelated;flex-shrink:0}
+
+/* Nav icons are baked 16x16 pixel sprites. Pin them square at 32 so the tile
+   glyphs do not collapse to the generic 14px button-glyph size. flex-basis stays
+   auto (not 32px) so the hero/utility rows can re-size them in style.css without
+   the basis overriding their width on the flex main axis and squashing them. */
+#mmButtons .pixelIcon{display:block;width:32px;height:32px;flex:0 0 auto;aspect-ratio:1;image-rendering:pixelated}

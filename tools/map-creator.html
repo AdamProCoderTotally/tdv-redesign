@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>TDV Map Creator</title>
+<link rel="stylesheet" href="map-creator.css">
+</head>
+<body>
+<header>
+  <div class="brand">TDV <span>MAP CREATOR</span></div>
+  <div class="actions">
+    <span id="status"></span>
+    <button class="btn gold" id="btnExport">EXPORT GAME CODE</button>
+    <button class="btn" id="btnProject">SAVE PROJECT</button>
+    <label class="btn">LOAD PROJECT<input type="file" id="fileImport" accept=".json" hidden></label>
+    <button class="btn red" id="btnNew">NEW MAP</button>
+  </div>
+</header>
+
+<main>
+<div class="cols">
+  <div class="side">
+    <div class="panel">
+      <h3>MY MAPS</h3>
+      <div id="mapList" class="objlist"></div>
+      <button class="btn gold wide" id="mapNew">+ NEW MAP</button>
+    </div>
+
+    <div class="panel">
+      <h3>MAP DETAILS</h3>
+      <div class="frow"><label>Map name</label><input id="mName" type="text" maxlength="20"></div>
+      <div class="frow"><label>Description</label><input id="mDesc" type="text" maxlength="60"></div>
+    </div>
+
+    <div class="panel">
+      <h3>TOOLS</h3>
+      <div class="toolrow" id="tools">
+        <button class="btn tgl on" data-tool="path">&#9992; PATH</button>
+        <button class="btn tgl" data-tool="water">WATER</button>
+        <button class="btn tgl" data-tool="grass">GRASS</button>
+        <button class="btn tgl" data-tool="elev1">HILL</button>
+        <button class="btn tgl" data-tool="elev2">MOUNTAIN</button>
+        <button class="btn tgl" data-tool="elev3">PEAK</button>
+        <button class="btn tgl" data-tool="base">&#127963; BASE</button>
+        <button class="btn tgl" data-tool="paint">&#127912; PAINT</button>
+        <button class="btn tgl" data-tool="clear">RESET TILE</button>
+      </div>
+      <div class="frow"><label>Paint colour</label><input type="color" id="paintCol" value="#c9b178">
+        <span class="hint">PAINT gives any tile a custom colour (use RESET TILE to clear it)</span></div>
+      <div class="btnrow">
+        <button class="btn" id="undoWp">&#8630; UNDO WAYPOINT</button>
+        <button class="btn" id="clearPath">CLEAR PATH</button>
+        <button class="btn" id="loadDefault">LOAD TEST MAP</button>
+        <button class="btn red" id="clearAll">CLEAR ALL</button>
+      </div>
+      <div id="warn" class="warn"></div>
+      <div class="hint">PATH: click tiles in order — enemies walk from the first point to the base. Right-click removes the last waypoint. WATER/HILLS/PAINT: drag to paint.</div>
+    </div>
+
+    <div class="panel">
+      <h3>CUSTOM TEXTURE (optional)</h3>
+      <label class="btn wide">UPLOAD IMAGE<input type="file" id="texFile" accept="image/*" hidden></label>
+      <div class="frow"><label>Opacity</label><input type="range" id="texAlpha" min="0.05" max="1" step="0.05" value="0.3">
+        <button class="btn" id="texClear">REMOVE</button></div>
+      <div class="hint">Tiled over the whole map in-game (weathering, grass texture...). Auto-shrunk to 128&times;128.</div>
+      <div id="texPrev" class="hint"></div>
+    </div>
+  </div>
+
+  <div class="panel center">
+    <canvas id="mapCanvas" width="520" height="520"></canvas>
+    <div class="hint" style="margin-top:8px">Edit view is top-down. In-game it renders isometric — use EXPORT, paste into map.js, and check the map-select screen for the real look.</div>
+  </div>
+
+  <div class="side">
+    <div class="panel">
+      <h3>MAP PALETTE</h3>
+      <div class="hint">Change any ground colour. Only colours you change are exported.</div>
+      <div id="palette" class="palgrid"></div>
+      <button class="btn" id="palReset">RESET PALETTE</button>
+    </div>
+
+    <div class="panel">
+      <h3>EXPORT</h3>
+      <div class="hint">1. Click EXPORT GAME CODE &rarr; 2. Copy the block &rarr; 3. Paste it into the <b>CUSTOM MAPS — PASTE ZONE</b> at the bottom of <b>js/map.js</b> &rarr; 4. Launch the game. Your map appears in the map select screen next to TEST PLACE.</div>
+      <textarea id="exportBox" rows="10" spellcheck="false" placeholder="Click EXPORT GAME CODE..."></textarea>
+      <div class="btnrow">
+        <button class="btn gold" id="copyExport">COPY CODE</button>
+        <button class="btn" id="dlExport">DOWNLOAD .JS</button>
+      </div>
+    </div>
+  </div>
+</div>
+</main>
+<script src="map-creator.js"></script>
+</body>
+</html>

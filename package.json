@@ -1,0 +1,24 @@
+{
+  "name": "tower-defence-v",
+  "private": true,
+  "version": "0.2.17",
+  "description": "Tower Defence V — desktop (Tauri) and web",
+  "scripts": {
+    "sync": "node scripts/sync-dist.js",
+    "editor": "node scripts/devserver.js",
+    "mp": "node scripts/mpshim.js",
+    "deploy:worker": "node scripts/deploy-worker.js",
+    "tauri": "tauri",
+    "dev": "tauri dev",
+    "build": "tauri build",
+    "build:exe": "tauri build --no-bundle",
+    "installer": "tauri build",
+    "release": "node scripts/release.js --bump",
+    "prerelease": "node scripts/release.js --pre-release"
+  },
+  "devDependencies": {
+    "@tauri-apps/cli": "^2",
+    "esbuild": "^0.28.2",
+    "playwright": "^1.64.0"
+  }
+}

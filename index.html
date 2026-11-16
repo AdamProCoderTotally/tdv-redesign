@@ -1,0 +1,547 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>Tower Defence V</title>
+<link rel="icon" type="image/svg+xml" href="css/icons/crest.svg">
+<link rel="stylesheet" href="css/style.css">
+<link rel="stylesheet" href="css/art-ui.css">
+<link rel="stylesheet" href="css/command.css">
+</head>
+<body>
+<div id="app">
+<canvas id="game"></canvas>
+<div id="uiRoot">
+
+  <!-- IN-GAME HUD -->
+  <div id="hudTop">
+    <div class="hudBox"><div class="stat" id="stLives">&#9829; 250</div><div class="stat" id="stCash">$250</div></div>
+    <div class="hudBox">
+      <div class="stat" id="waveWrap"><span id="stWave">WAVE 1/15</span><div id="waveSub">starts in 10s</div></div>
+      <button class="btn" id="skipWave" title="Start the next wave in 3s" style="display:none">Skip &#9654;</button>
+    </div>
+    <div class="hudBox">
+      <div id="speedBtns">
+        <button class="btn" data-spd="0.5">0.5&times;</button>
+        <button class="btn on" data-spd="1">1&times;</button>
+        <button class="btn" data-spd="2">2&times;</button>
+        <button class="btn" data-spd="3">3&times;</button>
+        <button class="btn" data-spd="4">4&times;</button>
+        <button class="btn" data-spd="5">5&times;</button>
+      </div>
+      <button class="btn iconbtn" id="pauseBtn" title="Pause"><svg viewBox="0 0 16 16"><path d="M3 2h4v12H3zM9 2h4v12H9z"/></svg></button>
+    </div>
+  </div>
+
+  <div id="bossbar">
+    <canvas id="bossIcon" width="40" height="40"></canvas>
+    <div><div class="bnm" id="bossName">TANK</div>
+      <div class="bossTrack"><div id="bossFill"></div><div id="bossTxt">2000/2000</div></div>
+      <div class="bossTrack bossSh" id="bossShieldTrack" style="display:none"><div id="bossShieldFill"></div><div id="bossShieldTxt">SHIELD</div></div></div>
+  </div>
+
+  <div id="towerbar"></div>
+  <!-- invader hotbar (PVP) -->
+  <div id="mpBar">
+    <div id="mpGold"><span id="mpGoldV">$0</span><span id="mpIncomeV">+0/7s</span></div>
+    <div id="mpSlots"></div>
+    <div id="mpQueue"><span id="mpQueueV">0 incoming</span></div>
+  </div>
+  <!-- in-match player roster (PVP) — usernames + staff icons -->
+  <div id="mpRoster"></div>
+  <!-- host context menu (lobby player list) -->
+  <div id="mpCtx">
+    <button data-a="kick">KICK</button>
+    <button data-a="host">MAKE HOST</button>
+  </div>
+  <div id="mmWrap" class="panel"><canvas id="minimap" width="150" height="150"></canvas></div>
+
+  <div id="sidepanel" class="panel">
+    <div id="spTitle">
+      <canvas width="44" height="44"></canvas>
+      <div><div class="nm"></div><div id="spLv"></div><div class="traits" id="spTraits"></div></div>
+      <button class="btn" id="spClose">&times;</button>
+    </div>
+    <div class="sp-sec" id="spStats"></div>
+    <div class="sp-sec" id="spTargeting"></div>
+    <div class="sp-sec" id="spLanes"></div>
+    <div class="sp-sec"><button class="btn red" id="sellBtn" style="width:100%"></button></div>
+  </div>
+
+  <div id="toasts"></div>
+
+  <!-- UPDATE CHECK — first thing the player sees (driven by js/update.js) -->
+  <div id="bootScreen">
+    <div class="bootTitle"><span class="brandMark" aria-hidden="true"><svg class="pixelCrest" viewBox="0 0 24 24" width="96" height="96" shape-rendering="crispEdges" aria-hidden="true" focusable="false"><path fill="#11150f" d="M2 1h20v16h-2v2h-2v2h-3v2H9v-2H6v-2H4v-2H2z"/><path fill="#c6914f" d="M3 2h18v14h-2v2h-2v2h-3v2h-4v-2H7v-2H5v-2H3z"/><path fill="#ffe0a0" d="M3 2h18v2H3zM3 4h2v12H3z"/><path fill="#343b2a" d="M5 4h14v11h-2v2h-2v2H9v-2H7v-2H5z"/><path fill="#d88639" d="M6 6h3v5h2v3h2v-3h2V6h3v6h-2v4h-3v2h-2v-2H8v-4H6z"/><path fill="#fff0bc" d="M6 6h3v3H6zM15 6h3v3h-3z"/><path fill="#f5bd64" d="M6 9h3v2h2v3h2v-3h2V9h3v3h-2v4H8v-4H6z"/></svg></span> TOWER DEFENCE V</div>
+    <div id="bootMsg">CHECKING FOR UPDATE&hellip;</div>
+    <div id="bootPrompt" style="display:none">
+      <div class="bpKicker">UPDATE AVAILABLE</div>
+      <div class="bpTitle" id="bpTitle">An update is available. Proceed?</div>
+      <div class="bpNote">(Without updating your game, you will lose features including: Multiplayer, Data-saving, and access to the latest content.)</div>
+      <div class="bpBtns">
+        <button class="btn gold" id="bpYes">YES</button>
+        <button class="btn" id="bpNo">NO</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- CLOUD GATE — sign-in required to play -->
+  <div class="overlay show" id="cloudGate" style="z-index:80">
+    <div class="menu panel" style="max-width:420px">
+      <header class="scrHead">
+        <div><div class="scrEyebrow">DUTY STATION</div><h2>SIGN IN</h2>
+          <div class="sub">AN ONLINE GAME &mdash; PROGRESS SAVES TO YOUR ACCOUNT</div></div>
+      </header>
+      <div class="setStack">
+        <label class="fldLabel" for="gateUser">Username</label>
+        <input id="gateUser" placeholder="username" autocomplete="username">
+      </div>
+      <div class="setStack">
+        <label class="fldLabel" for="gatePass">Password</label>
+        <input id="gatePass" type="password" placeholder="password" autocomplete="current-password">
+      </div>
+      <div class="scrFoot">
+        <button class="btn gold" id="gateLogin">SIGN IN</button>
+        <button class="btn" id="gateRegister">CREATE ACCOUNT</button>
+      </div>
+      <div class="mrow" style="margin:12px 0 6px">
+        <button class="btn" id="gateRetry" style="display:none">RETRY CONNECTION</button>
+      </div>
+      <div class="center gateStatus" id="gateStatus">&hellip;</div>
+    </div>
+  </div>
+
+  <!-- MAIN MENU -->
+  <div class="overlay show" id="mainMenu">
+    <div class="mmShell">
+      <header class="mmTopline">
+        <span class="mmBrand"><span class="brandMark" aria-hidden="true"><svg class="pixelCrest" viewBox="0 0 24 24" width="96" height="96" shape-rendering="crispEdges" aria-hidden="true" focusable="false"><path fill="#11150f" d="M2 1h20v16h-2v2h-2v2h-3v2H9v-2H6v-2H4v-2H2z"/><path fill="#c6914f" d="M3 2h18v14h-2v2h-2v2h-3v2h-4v-2H7v-2H5v-2H3z"/><path fill="#ffe0a0" d="M3 2h18v2H3zM3 4h2v12H3z"/><path fill="#343b2a" d="M5 4h14v11h-2v2h-2v2H9v-2H7v-2H5z"/><path fill="#d88639" d="M6 6h3v5h2v3h2v-3h2V6h3v6h-2v4h-3v2h-2v-2H8v-4H6z"/><path fill="#fff0bc" d="M6 6h3v3H6zM15 6h3v3h-3z"/><path fill="#f5bd64" d="M6 9h3v2h2v3h2v-3h2V9h3v3h-2v4H8v-4H6z"/></svg></span> COMMAND POST</span>
+        <span class="mmBuild"><span id="mmBuildVer"></span> <span class="mmBuildSep">/</span> BALANCE UPDATE</span>
+      </header>
+      <div class="mmMain">
+        <section class="mmHero" aria-labelledby="mmTitle">
+          <div class="mmEyebrow"><span aria-hidden="true"></span> THE LAST LIGHT. YOUR LAST STAND.</div>
+          <h1 class="gameTitle" id="mmTitle" aria-label="Tower Defence V">
+            <span class="gt-top">TOWER</span>
+            <span class="gt-mid">DEFENCE</span>
+            <span class="gt-vRow" aria-hidden="true"><span class="gt-rule"></span><span class="gt-crest"><span class="gt-v"><svg class="pixelCrest" viewBox="0 0 24 24" width="96" height="96" shape-rendering="crispEdges" aria-hidden="true" focusable="false"><path fill="#11150f" d="M2 1h20v16h-2v2h-2v2h-3v2H9v-2H6v-2H4v-2H2z"/><path fill="#c6914f" d="M3 2h18v14h-2v2h-2v2h-3v2h-4v-2H7v-2H5v-2H3z"/><path fill="#ffe0a0" d="M3 2h18v2H3zM3 4h2v12H3z"/><path fill="#343b2a" d="M5 4h14v11h-2v2h-2v2H9v-2H7v-2H5z"/><path fill="#d88639" d="M6 6h3v5h2v3h2v-3h2V6h3v6h-2v4h-3v2h-2v-2H8v-4H6z"/><path fill="#fff0bc" d="M6 6h3v3H6zM15 6h3v3h-3z"/><path fill="#f5bd64" d="M6 9h3v2h2v3h2v-3h2V9h3v3h-2v4H8v-4H6z"/></svg></span></span><span class="gt-rule"></span></span>
+          </h1>
+          <div class="mmHeroFoot">
+            <div class="mmMotto">BUILD. UPGRADE. DEFEND.</div>
+            <p>An army at the gates. An ember at your back.<br>Build the defence that stands between them.</p>
+            <div class="mmHeroTags"><span>01 &nbsp; BUILD</span><span>02 &nbsp; UPGRADE</span><span>03 &nbsp; SURVIVE</span></div>
+          </div>
+        </section>
+        <nav id="mmButtons" aria-label="Main menu">
+          <div class="mmNavHeading"><span>DEPLOYMENT</span><span class="mmNavIndex" aria-hidden="true">COMMAND / 01</span></div>
+          <button class="btn gold mmAction mmPlay" id="btnPlay" aria-label="Play">
+            <span class="mmIcon" aria-hidden="true"><svg class="pixelIcon pixel-play" viewBox="0 0 16 16" width="32" height="32" preserveAspectRatio="xMidYMid meet" shape-rendering="crispEdges" aria-hidden="true" focusable="false"><rect x="3" y="1" width="1" height="1" fill="#12150f"/><rect x="3" y="2" width="1" height="1" fill="#12150f"/><rect x="4" y="2" width="1" height="1" fill="#ffe2a0"/><rect x="5" y="2" width="1" height="1" fill="#12150f"/><rect x="3" y="3" width="1" height="1" fill="#12150f"/><rect x="4" y="3" width="1" height="1" fill="#ffe2a0"/><rect x="5" y="3" width="1" height="1" fill="#ffe2a0"/><rect x="6" y="3" width="1" height="1" fill="#ffe2a0"/><rect x="7" y="3" width="1" height="1" fill="#12150f"/><rect x="3" y="4" width="1" height="1" fill="#12150f"/><rect x="4" y="4" width="1" height="1" fill="#ffe2a0"/><rect x="5" y="4" width="1" height="1" fill="#ffe2a0"/><rect x="6" y="4" width="1" height="1" fill="#ffe2a0"/><rect x="7" y="4" width="1" height="1" fill="#ffe2a0"/><rect x="8" y="4" width="1" height="1" fill="#ffe2a0"/><rect x="9" y="4" width="1" height="1" fill="#12150f"/><rect x="3" y="5" width="1" height="1" fill="#12150f"/><rect x="4" y="5" width="1" height="1" fill="#ffe2a0"/><rect x="5" y="5" width="1" height="1" fill="#ffe2a0"/><rect x="6" y="5" width="1" height="1" fill="#ffe2a0"/><rect x="7" y="5" width="1" height="1" fill="#ffe2a0"/><rect x="8" y="5" width="1" height="1" fill="#ffe2a0"/><rect x="9" y="5" width="1" height="1" fill="#ffe2a0"/><rect x="10" y="5" width="1" height="1" fill="#ffe2a0"/><rect x="11" y="5" width="1" height="1" fill="#12150f"/><rect x="3" y="6" width="1" height="1" fill="#12150f"/><rect x="4" y="6" width="1" height="1" fill="#ffe2a0"/><rect x="5" y="6" width="1" height="1" fill="#ffe2a0"/><rect x="6" y="6" width="1" height="1" fill="#ffe2a0"/><rect x="7" y="6" width="1" height="1" fill="#ffe2a0"/><rect x="8" y="6" width="1" height="1" fill="#ffe2a0"/><rect x="9" y="6" width="1" height="1" fill="#ffe2a0"/><rect x="10" y="6" width="1" height="1" fill="#ffe2a0"/><rect x="11" y="6" width="1" height="1" fill="#ffe2a0"/><rect x="12" y="6" width="1" height="1" fill="#ffe2a0"/><rect x="13" y="6" width="1" height="1" fill="#12150f"/><rect x="3" y="7" width="1" height="1" fill="#12150f"/><rect x="4" y="7" width="1" height="1" fill="#ffe2a0"/><rect x="5" y="7" width="1" height="1" fill="#ffe2a0"/><rect x="6" y="7" width="1" height="1" fill="#ffe2a0"/><rect x="7" y="7" width="1" height="1" fill="#ffe2a0"/><rect x="8" y="7" width="1" height="1" fill="#ffe2a0"/><rect x="9" y="7" width="1" height="1" fill="#ffe2a0"/><rect x="10" y="7" width="1" height="1" fill="#ffe2a0"/><rect x="11" y="7" width="1" height="1" fill="#ffe2a0"/><rect x="12" y="7" width="1" height="1" fill="#b57c41"/><rect x="13" y="7" width="1" height="1" fill="#12150f"/><rect x="14" y="7" width="1" height="1" fill="#12150f"/><rect x="3" y="8" width="1" height="1" fill="#12150f"/><rect x="4" y="8" width="1" height="1" fill="#ffe2a0"/><rect x="5" y="8" width="1" height="1" fill="#ffe2a0"/><rect x="6" y="8" width="1" height="1" fill="#ffe2a0"/><rect x="7" y="8" width="1" height="1" fill="#ffe2a0"/><rect x="8" y="8" width="1" height="1" fill="#ffe2a0"/><rect x="9" y="8" width="1" height="1" fill="#ffe2a0"/><rect x="10" y="8" width="1" height="1" fill="#b57c41"/><rect x="11" y="8" width="1" height="1" fill="#b57c41"/><rect x="12" y="8" width="1" height="1" fill="#12150f"/><rect x="13" y="8" width="1" height="1" fill="#12150f"/><rect x="3" y="9" width="1" height="1" fill="#12150f"/><rect x="4" y="9" width="1" height="1" fill="#ffe2a0"/><rect x="5" y="9" width="1" height="1" fill="#ffe2a0"/><rect x="6" y="9" width="1" height="1" fill="#ffe2a0"/><rect x="7" y="9" width="1" height="1" fill="#ffe2a0"/><rect x="8" y="9" width="1" height="1" fill="#b57c41"/><rect x="9" y="9" width="1" height="1" fill="#b57c41"/><rect x="10" y="9" width="1" height="1" fill="#12150f"/><rect x="11" y="9" width="1" height="1" fill="#12150f"/><rect x="3" y="10" width="1" height="1" fill="#12150f"/><rect x="4" y="10" width="1" height="1" fill="#ffe2a0"/><rect x="5" y="10" width="1" height="1" fill="#ffe2a0"/><rect x="6" y="10" width="1" height="1" fill="#b57c41"/><rect x="7" y="10" width="1" height="1" fill="#b57c41"/><rect x="8" y="10" width="1" height="1" fill="#12150f"/><rect x="9" y="10" width="1" height="1" fill="#12150f"/><rect x="3" y="11" width="1" height="1" fill="#12150f"/><rect x="4" y="11" width="1" height="1" fill="#b57c41"/><rect x="5" y="11" width="1" height="1" fill="#b57c41"/><rect x="6" y="11" width="1" height="1" fill="#12150f"/><rect x="7" y="11" width="1" height="1" fill="#12150f"/><rect x="3" y="12" width="1" height="1" fill="#12150f"/><rect x="4" y="12" width="1" height="1" fill="#12150f"/><rect x="5" y="12" width="1" height="1" fill="#12150f"/></svg></span>
+            <span class="mmButtonCopy"><span class="mmButtonTitle">PLAY</span><small>Choose a map. Defend the ember.</small></span><span class="mmArrow" aria-hidden="true">&#8250;</span>
+          </button>
+          <button class="btn mmAction mmMulti" id="btnMulti" aria-label="Multiplayer">
+            <span class="mmIcon" aria-hidden="true"><svg class="pixelIcon pixel-multi" viewBox="0 0 16 16" width="32" height="32" preserveAspectRatio="xMidYMid meet" shape-rendering="crispEdges" aria-hidden="true" focusable="false"><rect x="1" y="1" width="1" height="1" fill="#111b17"/><rect x="2" y="1" width="1" height="1" fill="#111b17"/><rect x="3" y="1" width="1" height="1" fill="#111b17"/><rect x="12" y="1" width="1" height="1" fill="#111b17"/><rect x="13" y="1" width="1" height="1" fill="#111b17"/><rect x="14" y="1" width="1" height="1" fill="#111b17"/><rect x="1" y="2" width="1" height="1" fill="#111b17"/><rect x="2" y="2" width="1" height="1" fill="#c8e5ab"/><rect x="3" y="2" width="1" height="1" fill="#c8e5ab"/><rect x="4" y="2" width="1" height="1" fill="#111b17"/><rect x="11" y="2" width="1" height="1" fill="#111b17"/><rect x="12" y="2" width="1" height="1" fill="#c8e5ab"/><rect x="13" y="2" width="1" height="1" fill="#c8e5ab"/><rect x="14" y="2" width="1" height="1" fill="#111b17"/><rect x="2" y="3" width="1" height="1" fill="#111b17"/><rect x="3" y="3" width="1" height="1" fill="#c8e5ab"/><rect x="4" y="3" width="1" height="1" fill="#c8e5ab"/><rect x="5" y="3" width="1" height="1" fill="#111b17"/><rect x="10" y="3" width="1" height="1" fill="#111b17"/><rect x="11" y="3" width="1" height="1" fill="#c8e5ab"/><rect x="12" y="3" width="1" height="1" fill="#c8e5ab"/><rect x="13" y="3" width="1" height="1" fill="#111b17"/><rect x="3" y="4" width="1" height="1" fill="#111b17"/><rect x="4" y="4" width="1" height="1" fill="#c8e5ab"/><rect x="5" y="4" width="1" height="1" fill="#c8e5ab"/><rect x="6" y="4" width="1" height="1" fill="#111b17"/><rect x="9" y="4" width="1" height="1" fill="#111b17"/><rect x="10" y="4" width="1" height="1" fill="#c8e5ab"/><rect x="11" y="4" width="1" height="1" fill="#c8e5ab"/><rect x="12" y="4" width="1" height="1" fill="#111b17"/><rect x="4" y="5" width="1" height="1" fill="#111b17"/><rect x="5" y="5" width="1" height="1" fill="#c8e5ab"/><rect x="6" y="5" width="1" height="1" fill="#c8e5ab"/><rect x="7" y="5" width="1" height="1" fill="#111b17"/><rect x="8" y="5" width="1" height="1" fill="#111b17"/><rect x="9" y="5" width="1" height="1" fill="#c8e5ab"/><rect x="10" y="5" width="1" height="1" fill="#c8e5ab"/><rect x="11" y="5" width="1" height="1" fill="#111b17"/><rect x="5" y="6" width="1" height="1" fill="#111b17"/><rect x="6" y="6" width="1" height="1" fill="#c8e5ab"/><rect x="7" y="6" width="1" height="1" fill="#c8e5ab"/><rect x="8" y="6" width="1" height="1" fill="#c8e5ab"/><rect x="9" y="6" width="1" height="1" fill="#c8e5ab"/><rect x="10" y="6" width="1" height="1" fill="#c8e5ab"/><rect x="11" y="6" width="1" height="1" fill="#111b17"/><rect x="6" y="7" width="1" height="1" fill="#111b17"/><rect x="7" y="7" width="1" height="1" fill="#c8e5ab"/><rect x="8" y="7" width="1" height="1" fill="#c8e5ab"/><rect x="9" y="7" width="1" height="1" fill="#c8e5ab"/><rect x="10" y="7" width="1" height="1" fill="#111b17"/><rect x="5" y="8" width="1" height="1" fill="#111b17"/><rect x="6" y="8" width="1" height="1" fill="#c8e5ab"/><rect x="7" y="8" width="1" height="1" fill="#c8e5ab"/><rect x="8" y="8" width="1" height="1" fill="#c8e5ab"/><rect x="9" y="8" width="1" height="1" fill="#c8e5ab"/><rect x="10" y="8" width="1" height="1" fill="#c8e5ab"/><rect x="11" y="8" width="1" height="1" fill="#111b17"/><rect x="3" y="9" width="1" height="1" fill="#111b17"/><rect x="4" y="9" width="1" height="1" fill="#111b17"/><rect x="5" y="9" width="1" height="1" fill="#c8e5ab"/><rect x="6" y="9" width="1" height="1" fill="#c8e5ab"/><rect x="7" y="9" width="1" height="1" fill="#111b17"/><rect x="8" y="9" width="1" height="1" fill="#111b17"/><rect x="9" y="9" width="1" height="1" fill="#c8e5ab"/><rect x="10" y="9" width="1" height="1" fill="#c8e5ab"/><rect x="11" y="9" width="1" height="1" fill="#111b17"/><rect x="12" y="9" width="1" height="1" fill="#111b17"/><rect x="2" y="10" width="1" height="1" fill="#111b17"/><rect x="3" y="10" width="1" height="1" fill="#c8e5ab"/><rect x="4" y="10" width="1" height="1" fill="#c8e5ab"/><rect x="5" y="10" width="1" height="1" fill="#c8e5ab"/><rect x="6" y="10" width="1" height="1" fill="#111b17"/><rect x="9" y="10" width="1" height="1" fill="#111b17"/><rect x="10" y="10" width="1" height="1" fill="#c8e5ab"/><rect x="11" y="10" width="1" height="1" fill="#c8e5ab"/><rect x="12" y="10" width="1" height="1" fill="#c8e5ab"/><rect x="13" y="10" width="1" height="1" fill="#111b17"/><rect x="2" y="11" width="1" height="1" fill="#111b17"/><rect x="3" y="11" width="1" height="1" fill="#111b17"/><rect x="4" y="11" width="1" height="1" fill="#c8e5ab"/><rect x="5" y="11" width="1" height="1" fill="#111b17"/><rect x="10" y="11" width="1" height="1" fill="#111b17"/><rect x="11" y="11" width="1" height="1" fill="#c8e5ab"/><rect x="12" y="11" width="1" height="1" fill="#111b17"/><rect x="13" y="11" width="1" height="1" fill="#111b17"/><rect x="3" y="12" width="1" height="1" fill="#111b17"/><rect x="4" y="12" width="1" height="1" fill="#688956"/><rect x="5" y="12" width="1" height="1" fill="#111b17"/><rect x="10" y="12" width="1" height="1" fill="#111b17"/><rect x="11" y="12" width="1" height="1" fill="#688956"/><rect x="12" y="12" width="1" height="1" fill="#111b17"/><rect x="2" y="13" width="1" height="1" fill="#111b17"/><rect x="3" y="13" width="1" height="1" fill="#688956"/><rect x="4" y="13" width="1" height="1" fill="#111b17"/><rect x="11" y="13" width="1" height="1" fill="#111b17"/><rect x="12" y="13" width="1" height="1" fill="#688956"/><rect x="13" y="13" width="1" height="1" fill="#111b17"/><rect x="2" y="14" width="1" height="1" fill="#111b17"/><rect x="3" y="14" width="1" height="1" fill="#111b17"/><rect x="12" y="14" width="1" height="1" fill="#111b17"/><rect x="13" y="14" width="1" height="1" fill="#111b17"/></svg></span>
+            <span class="mmButtonCopy"><span class="mmButtonTitle">MULTIPLAYER</span><small>Outbuild. Outsmart. Battle online.</small></span><span class="mmMiniTag">PVP</span>
+          </button>
+          <div class="mmSectionLabel">PREPARE &amp; PROGRESS</div>
+          <div class="mmCollection">
+            <button class="btn mmTile" id="btnShop" aria-label="Shop"><svg class="pixelIcon pixel-shop" viewBox="0 0 16 16" width="32" height="32" preserveAspectRatio="xMidYMid meet" shape-rendering="crispEdges" aria-hidden="true" focusable="false"><rect x="4" y="1" width="1" height="1" fill="#12150f"/><rect x="5" y="1" width="1" height="1" fill="#12150f"/><rect x="6" y="1" width="1" height="1" fill="#12150f"/><rect x="7" y="1" width="1" height="1" fill="#12150f"/><rect x="8" y="1" width="1" height="1" fill="#12150f"/><rect x="9" y="1" width="1" height="1" fill="#12150f"/><rect x="10" y="1" width="1" height="1" fill="#12150f"/><rect x="11" y="1" width="1" height="1" fill="#12150f"/><rect x="3" y="2" width="1" height="1" fill="#12150f"/><rect x="4" y="2" width="1" height="1" fill="#ffe2a0"/><rect x="5" y="2" width="1" height="1" fill="#ffe2a0"/><rect x="6" y="2" width="1" height="1" fill="#ffe2a0"/><rect x="7" y="2" width="1" height="1" fill="#ffe2a0"/><rect x="8" y="2" width="1" height="1" fill="#ffe2a0"/><rect x="9" y="2" width="1" height="1" fill="#ffe2a0"/><rect x="10" y="2" width="1" height="1" fill="#ffe2a0"/><rect x="11" y="2" width="1" height="1" fill="#ffe2a0"/><rect x="12" y="2" width="1" height="1" fill="#12150f"/><rect x="2" y="3" width="1" height="1" fill="#12150f"/><rect x="3" y="3" width="1" height="1" fill="#ffe2a0"/><rect x="4" y="3" width="1" height="1" fill="#ffe2a0"/><rect x="5" y="3" width="1" height="1" fill="#b57c41"/><rect x="6" y="3" width="1" height="1" fill="#b57c41"/><rect x="7" y="3" width="1" height="1" fill="#b57c41"/><rect x="8" y="3" width="1" height="1" fill="#b57c41"/><rect x="9" y="3" width="1" height="1" fill="#b57c41"/><rect x="10" y="3" width="1" height="1" fill="#b57c41"/><rect x="11" y="3" width="1" height="1" fill="#ffe2a0"/><rect x="12" y="3" width="1" height="1" fill="#ffe2a0"/><rect x="13" y="3" width="1" height="1" fill="#12150f"/><rect x="2" y="4" width="1" height="1" fill="#12150f"/><rect x="3" y="4" width="1" height="1" fill="#ffe2a0"/><rect x="4" y="4" width="1" height="1" fill="#b57c41"/><rect x="5" y="4" width="1" height="1" fill="#b57c41"/><rect x="6" y="4" width="1" height="1" fill="#b57c41"/><rect x="7" y="4" width="1" height="1" fill="#b57c41"/><rect x="8" y="4" width="1" height="1" fill="#b57c41"/><rect x="9" y="4" width="1" height="1" fill="#b57c41"/><rect x="10" y="4" width="1" height="1" fill="#b57c41"/><rect x="11" y="4" width="1" height="1" fill="#b57c41"/><rect x="12" y="4" width="1" height="1" fill="#ffe2a0"/><rect x="13" y="4" width="1" height="1" fill="#12150f"/><rect x="2" y="5" width="1" height="1" fill="#12150f"/><rect x="3" y="5" width="1" height="1" fill="#12150f"/><rect x="4" y="5" width="1" height="1" fill="#12150f"/><rect x="5" y="5" width="1" height="1" fill="#12150f"/><rect x="6" y="5" width="1" height="1" fill="#12150f"/><rect x="7" y="5" width="1" height="1" fill="#12150f"/><rect x="8" y="5" width="1" height="1" fill="#12150f"/><rect x="9" y="5" width="1" height="1" fill="#12150f"/><rect x="10" y="5" width="1" height="1" fill="#12150f"/><rect x="11" y="5" width="1" height="1" fill="#12150f"/><rect x="12" y="5" width="1" height="1" fill="#12150f"/><rect x="13" y="5" width="1" height="1" fill="#12150f"/><rect x="2" y="6" width="1" height="1" fill="#12150f"/><rect x="3" y="6" width="1" height="1" fill="#ffe2a0"/><rect x="4" y="6" width="1" height="1" fill="#ffe2a0"/><rect x="5" y="6" width="1" height="1" fill="#ffe2a0"/><rect x="6" y="6" width="1" height="1" fill="#ffe2a0"/><rect x="7" y="6" width="1" height="1" fill="#ffe2a0"/><rect x="8" y="6" width="1" height="1" fill="#ffe2a0"/><rect x="9" y="6" width="1" height="1" fill="#ffe2a0"/><rect x="10" y="6" width="1" height="1" fill="#ffe2a0"/><rect x="11" y="6" width="1" height="1" fill="#ffe2a0"/><rect x="12" y="6" width="1" height="1" fill="#ffe2a0"/><rect x="13" y="6" width="1" height="1" fill="#12150f"/><rect x="2" y="7" width="1" height="1" fill="#12150f"/><rect x="3" y="7" width="1" height="1" fill="#ffe2a0"/><rect x="4" y="7" width="1" height="1" fill="#ffe2a0"/><rect x="5" y="7" width="1" height="1" fill="#12150f"/><rect x="6" y="7" width="1" height="1" fill="#12150f"/><rect x="7" y="7" width="1" height="1" fill="#12150f"/><rect x="8" y="7" width="1" height="1" fill="#12150f"/><rect x="9" y="7" width="1" height="1" fill="#12150f"/><rect x="10" y="7" width="1" height="1" fill="#12150f"/><rect x="11" y="7" width="1" height="1" fill="#ffe2a0"/><rect x="12" y="7" width="1" height="1" fill="#ffe2a0"/><rect x="13" y="7" width="1" height="1" fill="#12150f"/><rect x="2" y="8" width="1" height="1" fill="#12150f"/><rect x="3" y="8" width="1" height="1" fill="#ffe2a0"/><rect x="4" y="8" width="1" height="1" fill="#ffe2a0"/><rect x="5" y="8" width="1" height="1" fill="#12150f"/><rect x="7" y="8" width="1" height="1" fill="#ffe2a0"/><rect x="8" y="8" width="1" height="1" fill="#ffe2a0"/><rect x="10" y="8" width="1" height="1" fill="#12150f"/><rect x="11" y="8" width="1" height="1" fill="#ffe2a0"/><rect x="12" y="8" width="1" height="1" fill="#ffe2a0"/><rect x="13" y="8" width="1" height="1" fill="#12150f"/><rect x="2" y="9" width="1" height="1" fill="#12150f"/><rect x="3" y="9" width="1" height="1" fill="#ffe2a0"/><rect x="4" y="9" width="1" height="1" fill="#ffe2a0"/><rect x="5" y="9" width="1" height="1" fill="#12150f"/><rect x="7" y="9" width="1" height="1" fill="#ffe2a0"/><rect x="8" y="9" width="1" height="1" fill="#ffe2a0"/><rect x="10" y="9" width="1" height="1" fill="#12150f"/><rect x="11" y="9" width="1" height="1" fill="#ffe2a0"/><rect x="12" y="9" width="1" height="1" fill="#ffe2a0"/><rect x="13" y="9" width="1" height="1" fill="#12150f"/><rect x="2" y="10" width="1" height="1" fill="#12150f"/><rect x="3" y="10" width="1" height="1" fill="#b57c41"/><rect x="4" y="10" width="1" height="1" fill="#b57c41"/><rect x="5" y="10" width="1" height="1" fill="#12150f"/><rect x="7" y="10" width="1" height="1" fill="#ffe2a0"/><rect x="8" y="10" width="1" height="1" fill="#ffe2a0"/><rect x="10" y="10" width="1" height="1" fill="#12150f"/><rect x="11" y="10" width="1" height="1" fill="#b57c41"/><rect x="12" y="10" width="1" height="1" fill="#b57c41"/><rect x="13" y="10" width="1" height="1" fill="#12150f"/><rect x="2" y="11" width="1" height="1" fill="#12150f"/><rect x="3" y="11" width="1" height="1" fill="#b57c41"/><rect x="4" y="11" width="1" height="1" fill="#b57c41"/><rect x="5" y="11" width="1" height="1" fill="#12150f"/><rect x="6" y="11" width="1" height="1" fill="#12150f"/><rect x="7" y="11" width="1" height="1" fill="#12150f"/><rect x="8" y="11" width="1" height="1" fill="#12150f"/><rect x="9" y="11" width="1" height="1" fill="#12150f"/><rect x="10" y="11" width="1" height="1" fill="#12150f"/><rect x="11" y="11" width="1" height="1" fill="#b57c41"/><rect x="12" y="11" width="1" height="1" fill="#b57c41"/><rect x="13" y="11" width="1" height="1" fill="#12150f"/><rect x="2" y="12" width="1" height="1" fill="#12150f"/><rect x="3" y="12" width="1" height="1" fill="#b57c41"/><rect x="4" y="12" width="1" height="1" fill="#b57c41"/><rect x="5" y="12" width="1" height="1" fill="#b57c41"/><rect x="6" y="12" width="1" height="1" fill="#b57c41"/><rect x="7" y="12" width="1" height="1" fill="#b57c41"/><rect x="8" y="12" width="1" height="1" fill="#b57c41"/><rect x="9" y="12" width="1" height="1" fill="#b57c41"/><rect x="10" y="12" width="1" height="1" fill="#b57c41"/><rect x="11" y="12" width="1" height="1" fill="#b57c41"/><rect x="12" y="12" width="1" height="1" fill="#b57c41"/><rect x="13" y="12" width="1" height="1" fill="#12150f"/><rect x="2" y="13" width="1" height="1" fill="#12150f"/><rect x="3" y="13" width="1" height="1" fill="#12150f"/><rect x="4" y="13" width="1" height="1" fill="#12150f"/><rect x="5" y="13" width="1" height="1" fill="#12150f"/><rect x="6" y="13" width="1" height="1" fill="#12150f"/><rect x="7" y="13" width="1" height="1" fill="#12150f"/><rect x="8" y="13" width="1" height="1" fill="#12150f"/><rect x="9" y="13" width="1" height="1" fill="#12150f"/><rect x="10" y="13" width="1" height="1" fill="#12150f"/><rect x="11" y="13" width="1" height="1" fill="#12150f"/><rect x="12" y="13" width="1" height="1" fill="#12150f"/><rect x="13" y="13" width="1" height="1" fill="#12150f"/></svg><span><span class="mmButtonTitle">SHOP</span><small>Expand your arsenal</small></span></button>
+            <button class="btn mmTile" id="btnTowers" aria-label="Towers"><svg class="pixelIcon pixel-towers" viewBox="0 0 16 16" width="32" height="32" preserveAspectRatio="xMidYMid meet" shape-rendering="crispEdges" aria-hidden="true" focusable="false"><rect x="2" y="1" width="1" height="1" fill="#12150f"/><rect x="3" y="1" width="1" height="1" fill="#12150f"/><rect x="4" y="1" width="1" height="1" fill="#12150f"/><rect x="6" y="1" width="1" height="1" fill="#12150f"/><rect x="7" y="1" width="1" height="1" fill="#12150f"/><rect x="8" y="1" width="1" height="1" fill="#12150f"/><rect x="9" y="1" width="1" height="1" fill="#12150f"/><rect x="11" y="1" width="1" height="1" fill="#12150f"/><rect x="12" y="1" width="1" height="1" fill="#12150f"/><rect x="13" y="1" width="1" height="1" fill="#12150f"/><rect x="2" y="2" width="1" height="1" fill="#12150f"/><rect x="3" y="2" width="1" height="1" fill="#ffe2a0"/><rect x="4" y="2" width="1" height="1" fill="#12150f"/><rect x="6" y="2" width="1" height="1" fill="#12150f"/><rect x="7" y="2" width="1" height="1" fill="#ffe2a0"/><rect x="8" y="2" width="1" height="1" fill="#ffe2a0"/><rect x="9" y="2" width="1" height="1" fill="#12150f"/><rect x="11" y="2" width="1" height="1" fill="#12150f"/><rect x="12" y="2" width="1" height="1" fill="#ffe2a0"/><rect x="13" y="2" width="1" height="1" fill="#12150f"/><rect x="2" y="3" width="1" height="1" fill="#12150f"/><rect x="3" y="3" width="1" height="1" fill="#ffe2a0"/><rect x="4" y="3" width="1" height="1" fill="#12150f"/><rect x="5" y="3" width="1" height="1" fill="#12150f"/><rect x="6" y="3" width="1" height="1" fill="#12150f"/><rect x="7" y="3" width="1" height="1" fill="#ffe2a0"/><rect x="8" y="3" width="1" height="1" fill="#ffe2a0"/><rect x="9" y="3" width="1" height="1" fill="#12150f"/><rect x="10" y="3" width="1" height="1" fill="#12150f"/><rect x="11" y="3" width="1" height="1" fill="#12150f"/><rect x="12" y="3" width="1" height="1" fill="#ffe2a0"/><rect x="13" y="3" width="1" height="1" fill="#12150f"/><rect x="2" y="4" width="1" height="1" fill="#12150f"/><rect x="3" y="4" width="1" height="1" fill="#ffe2a0"/><rect x="4" y="4" width="1" height="1" fill="#ffe2a0"/><rect x="5" y="4" width="1" height="1" fill="#ffe2a0"/><rect x="6" y="4" width="1" height="1" fill="#ffe2a0"/><rect x="7" y="4" width="1" height="1" fill="#ffe2a0"/><rect x="8" y="4" width="1" height="1" fill="#ffe2a0"/><rect x="9" y="4" width="1" height="1" fill="#ffe2a0"/><rect x="10" y="4" width="1" height="1" fill="#ffe2a0"/><rect x="11" y="4" width="1" height="1" fill="#ffe2a0"/><rect x="12" y="4" width="1" height="1" fill="#ffe2a0"/><rect x="13" y="4" width="1" height="1" fill="#12150f"/><rect x="2" y="5" width="1" height="1" fill="#12150f"/><rect x="3" y="5" width="1" height="1" fill="#12150f"/><rect x="4" y="5" width="1" height="1" fill="#12150f"/><rect x="5" y="5" width="1" height="1" fill="#12150f"/><rect x="6" y="5" width="1" height="1" fill="#12150f"/><rect x="7" y="5" width="1" height="1" fill="#12150f"/><rect x="8" y="5" width="1" height="1" fill="#12150f"/><rect x="9" y="5" width="1" height="1" fill="#12150f"/><rect x="10" y="5" width="1" height="1" fill="#12150f"/><rect x="11" y="5" width="1" height="1" fill="#12150f"/><rect x="12" y="5" width="1" height="1" fill="#12150f"/><rect x="13" y="5" width="1" height="1" fill="#12150f"/><rect x="3" y="6" width="1" height="1" fill="#12150f"/><rect x="4" y="6" width="1" height="1" fill="#ffe2a0"/><rect x="5" y="6" width="1" height="1" fill="#ffe2a0"/><rect x="6" y="6" width="1" height="1" fill="#ffe2a0"/><rect x="7" y="6" width="1" height="1" fill="#ffe2a0"/><rect x="8" y="6" width="1" height="1" fill="#ffe2a0"/><rect x="9" y="6" width="1" height="1" fill="#ffe2a0"/><rect x="10" y="6" width="1" height="1" fill="#b57c41"/><rect x="11" y="6" width="1" height="1" fill="#b57c41"/><rect x="12" y="6" width="1" height="1" fill="#12150f"/><rect x="3" y="7" width="1" height="1" fill="#12150f"/><rect x="4" y="7" width="1" height="1" fill="#ffe2a0"/><rect x="5" y="7" width="1" height="1" fill="#ffe2a0"/><rect x="6" y="7" width="1" height="1" fill="#12150f"/><rect x="7" y="7" width="1" height="1" fill="#12150f"/><rect x="8" y="7" width="1" height="1" fill="#12150f"/><rect x="9" y="7" width="1" height="1" fill="#12150f"/><rect x="10" y="7" width="1" height="1" fill="#b57c41"/><rect x="11" y="7" width="1" height="1" fill="#b57c41"/><rect x="12" y="7" width="1" height="1" fill="#12150f"/><rect x="3" y="8" width="1" height="1" fill="#12150f"/><rect x="4" y="8" width="1" height="1" fill="#ffe2a0"/><rect x="5" y="8" width="1" height="1" fill="#ffe2a0"/><rect x="6" y="8" width="1" height="1" fill="#12150f"/><rect x="9" y="8" width="1" height="1" fill="#12150f"/><rect x="10" y="8" width="1" height="1" fill="#b57c41"/><rect x="11" y="8" width="1" height="1" fill="#b57c41"/><rect x="12" y="8" width="1" height="1" fill="#12150f"/><rect x="3" y="9" width="1" height="1" fill="#12150f"/><rect x="4" y="9" width="1" height="1" fill="#ffe2a0"/><rect x="5" y="9" width="1" height="1" fill="#ffe2a0"/><rect x="6" y="9" width="1" height="1" fill="#12150f"/><rect x="9" y="9" width="1" height="1" fill="#12150f"/><rect x="10" y="9" width="1" height="1" fill="#b57c41"/><rect x="11" y="9" width="1" height="1" fill="#b57c41"/><rect x="12" y="9" width="1" height="1" fill="#12150f"/><rect x="3" y="10" width="1" height="1" fill="#12150f"/><rect x="4" y="10" width="1" height="1" fill="#ffe2a0"/><rect x="5" y="10" width="1" height="1" fill="#ffe2a0"/><rect x="6" y="10" width="1" height="1" fill="#12150f"/><rect x="9" y="10" width="1" height="1" fill="#12150f"/><rect x="10" y="10" width="1" height="1" fill="#b57c41"/><rect x="11" y="10" width="1" height="1" fill="#b57c41"/><rect x="12" y="10" width="1" height="1" fill="#12150f"/><rect x="3" y="11" width="1" height="1" fill="#12150f"/><rect x="4" y="11" width="1" height="1" fill="#ffe2a0"/><rect x="5" y="11" width="1" height="1" fill="#ffe2a0"/><rect x="6" y="11" width="1" height="1" fill="#12150f"/><rect x="9" y="11" width="1" height="1" fill="#12150f"/><rect x="10" y="11" width="1" height="1" fill="#b57c41"/><rect x="11" y="11" width="1" height="1" fill="#b57c41"/><rect x="12" y="11" width="1" height="1" fill="#12150f"/><rect x="2" y="12" width="1" height="1" fill="#12150f"/><rect x="3" y="12" width="1" height="1" fill="#12150f"/><rect x="4" y="12" width="1" height="1" fill="#ffe2a0"/><rect x="5" y="12" width="1" height="1" fill="#ffe2a0"/><rect x="6" y="12" width="1" height="1" fill="#12150f"/><rect x="7" y="12" width="1" height="1" fill="#12150f"/><rect x="8" y="12" width="1" height="1" fill="#12150f"/><rect x="9" y="12" width="1" height="1" fill="#12150f"/><rect x="10" y="12" width="1" height="1" fill="#b57c41"/><rect x="11" y="12" width="1" height="1" fill="#b57c41"/><rect x="12" y="12" width="1" height="1" fill="#12150f"/><rect x="13" y="12" width="1" height="1" fill="#12150f"/><rect x="2" y="13" width="1" height="1" fill="#12150f"/><rect x="3" y="13" width="1" height="1" fill="#b57c41"/><rect x="4" y="13" width="1" height="1" fill="#b57c41"/><rect x="5" y="13" width="1" height="1" fill="#b57c41"/><rect x="6" y="13" width="1" height="1" fill="#b57c41"/><rect x="7" y="13" width="1" height="1" fill="#b57c41"/><rect x="8" y="13" width="1" height="1" fill="#b57c41"/><rect x="9" y="13" width="1" height="1" fill="#b57c41"/><rect x="10" y="13" width="1" height="1" fill="#b57c41"/><rect x="11" y="13" width="1" height="1" fill="#b57c41"/><rect x="12" y="13" width="1" height="1" fill="#b57c41"/><rect x="13" y="13" width="1" height="1" fill="#12150f"/><rect x="2" y="14" width="1" height="1" fill="#12150f"/><rect x="3" y="14" width="1" height="1" fill="#12150f"/><rect x="4" y="14" width="1" height="1" fill="#12150f"/><rect x="5" y="14" width="1" height="1" fill="#12150f"/><rect x="6" y="14" width="1" height="1" fill="#12150f"/><rect x="7" y="14" width="1" height="1" fill="#12150f"/><rect x="8" y="14" width="1" height="1" fill="#12150f"/><rect x="9" y="14" width="1" height="1" fill="#12150f"/><rect x="10" y="14" width="1" height="1" fill="#12150f"/><rect x="11" y="14" width="1" height="1" fill="#12150f"/><rect x="12" y="14" width="1" height="1" fill="#12150f"/><rect x="13" y="14" width="1" height="1" fill="#12150f"/></svg><span><span class="mmButtonTitle">TOWERS</span><small>Build your loadout</small></span></button>
+            <button class="btn mmTile" id="btnBadges" aria-label="Badges"><svg class="pixelIcon pixel-badges" viewBox="0 0 16 16" width="32" height="32" preserveAspectRatio="xMidYMid meet" shape-rendering="crispEdges" aria-hidden="true" focusable="false"><rect x="5" y="0" width="1" height="1" fill="#12150f"/><rect x="6" y="0" width="1" height="1" fill="#12150f"/><rect x="7" y="0" width="1" height="1" fill="#12150f"/><rect x="8" y="0" width="1" height="1" fill="#12150f"/><rect x="9" y="0" width="1" height="1" fill="#12150f"/><rect x="10" y="0" width="1" height="1" fill="#12150f"/><rect x="3" y="1" width="1" height="1" fill="#12150f"/><rect x="4" y="1" width="1" height="1" fill="#12150f"/><rect x="5" y="1" width="1" height="1" fill="#ffe2a0"/><rect x="6" y="1" width="1" height="1" fill="#ffe2a0"/><rect x="7" y="1" width="1" height="1" fill="#ffe2a0"/><rect x="8" y="1" width="1" height="1" fill="#ffe2a0"/><rect x="9" y="1" width="1" height="1" fill="#ffe2a0"/><rect x="10" y="1" width="1" height="1" fill="#ffe2a0"/><rect x="11" y="1" width="1" height="1" fill="#12150f"/><rect x="12" y="1" width="1" height="1" fill="#12150f"/><rect x="2" y="2" width="1" height="1" fill="#12150f"/><rect x="3" y="2" width="1" height="1" fill="#ffe2a0"/><rect x="4" y="2" width="1" height="1" fill="#ffe2a0"/><rect x="5" y="2" width="1" height="1" fill="#ffe2a0"/><rect x="6" y="2" width="1" height="1" fill="#ffe2a0"/><rect x="7" y="2" width="1" height="1" fill="#ffe2a0"/><rect x="8" y="2" width="1" height="1" fill="#ffe2a0"/><rect x="9" y="2" width="1" height="1" fill="#ffe2a0"/><rect x="10" y="2" width="1" height="1" fill="#ffe2a0"/><rect x="11" y="2" width="1" height="1" fill="#ffe2a0"/><rect x="12" y="2" width="1" height="1" fill="#ffe2a0"/><rect x="13" y="2" width="1" height="1" fill="#12150f"/><rect x="2" y="3" width="1" height="1" fill="#12150f"/><rect x="3" y="3" width="1" height="1" fill="#ffe2a0"/><rect x="4" y="3" width="1" height="1" fill="#ffe2a0"/><rect x="5" y="3" width="1" height="1" fill="#ffe2a0"/><rect x="6" y="3" width="1" height="1" fill="#12150f"/><rect x="7" y="3" width="1" height="1" fill="#ffe2a0"/><rect x="8" y="3" width="1" height="1" fill="#ffe2a0"/><rect x="9" y="3" width="1" height="1" fill="#12150f"/><rect x="10" y="3" width="1" height="1" fill="#ffe2a0"/><rect x="11" y="3" width="1" height="1" fill="#ffe2a0"/><rect x="12" y="3" width="1" height="1" fill="#ffe2a0"/><rect x="13" y="3" width="1" height="1" fill="#12150f"/><rect x="1" y="4" width="1" height="1" fill="#12150f"/><rect x="2" y="4" width="1" height="1" fill="#ffe2a0"/><rect x="3" y="4" width="1" height="1" fill="#ffe2a0"/><rect x="4" y="4" width="1" height="1" fill="#ffe2a0"/><rect x="5" y="4" width="1" height="1" fill="#ffe2a0"/><rect x="6" y="4" width="1" height="1" fill="#12150f"/><rect x="7" y="4" width="1" height="1" fill="#ffe2a0"/><rect x="8" y="4" width="1" height="1" fill="#ffe2a0"/><rect x="9" y="4" width="1" height="1" fill="#12150f"/><rect x="10" y="4" width="1" height="1" fill="#ffe2a0"/><rect x="11" y="4" width="1" height="1" fill="#ffe2a0"/><rect x="12" y="4" width="1" height="1" fill="#ffe2a0"/><rect x="13" y="4" width="1" height="1" fill="#ffe2a0"/><rect x="14" y="4" width="1" height="1" fill="#12150f"/><rect x="1" y="5" width="1" height="1" fill="#12150f"/><rect x="2" y="5" width="1" height="1" fill="#ffe2a0"/><rect x="3" y="5" width="1" height="1" fill="#ffe2a0"/><rect x="4" y="5" width="1" height="1" fill="#12150f"/><rect x="5" y="5" width="1" height="1" fill="#12150f"/><rect x="6" y="5" width="1" height="1" fill="#ffe2a0"/><rect x="7" y="5" width="1" height="1" fill="#ffe2a0"/><rect x="8" y="5" width="1" height="1" fill="#ffe2a0"/><rect x="9" y="5" width="1" height="1" fill="#ffe2a0"/><rect x="10" y="5" width="1" height="1" fill="#12150f"/><rect x="11" y="5" width="1" height="1" fill="#12150f"/><rect x="12" y="5" width="1" height="1" fill="#ffe2a0"/><rect x="13" y="5" width="1" height="1" fill="#ffe2a0"/><rect x="14" y="5" width="1" height="1" fill="#12150f"/><rect x="1" y="6" width="1" height="1" fill="#12150f"/><rect x="2" y="6" width="1" height="1" fill="#ffe2a0"/><rect x="3" y="6" width="1" height="1" fill="#ffe2a0"/><rect x="4" y="6" width="1" height="1" fill="#ffe2a0"/><rect x="5" y="6" width="1" height="1" fill="#ffe2a0"/><rect x="6" y="6" width="1" height="1" fill="#12150f"/><rect x="7" y="6" width="1" height="1" fill="#ffe2a0"/><rect x="8" y="6" width="1" height="1" fill="#ffe2a0"/><rect x="9" y="6" width="1" height="1" fill="#12150f"/><rect x="10" y="6" width="1" height="1" fill="#ffe2a0"/><rect x="11" y="6" width="1" height="1" fill="#ffe2a0"/><rect x="12" y="6" width="1" height="1" fill="#ffe2a0"/><rect x="13" y="6" width="1" height="1" fill="#ffe2a0"/><rect x="14" y="6" width="1" height="1" fill="#12150f"/><rect x="2" y="7" width="1" height="1" fill="#12150f"/><rect x="3" y="7" width="1" height="1" fill="#b57c41"/><rect x="4" y="7" width="1" height="1" fill="#b57c41"/><rect x="5" y="7" width="1" height="1" fill="#b57c41"/><rect x="6" y="7" width="1" height="1" fill="#12150f"/><rect x="7" y="7" width="1" height="1" fill="#ffe2a0"/><rect x="8" y="7" width="1" height="1" fill="#ffe2a0"/><rect x="9" y="7" width="1" height="1" fill="#12150f"/><rect x="10" y="7" width="1" height="1" fill="#b57c41"/><rect x="11" y="7" width="1" height="1" fill="#b57c41"/><rect x="12" y="7" width="1" height="1" fill="#b57c41"/><rect x="13" y="7" width="1" height="1" fill="#12150f"/><rect x="2" y="8" width="1" height="1" fill="#12150f"/><rect x="3" y="8" width="1" height="1" fill="#b57c41"/><rect x="4" y="8" width="1" height="1" fill="#b57c41"/><rect x="5" y="8" width="1" height="1" fill="#b57c41"/><rect x="6" y="8" width="1" height="1" fill="#b57c41"/><rect x="7" y="8" width="1" height="1" fill="#b57c41"/><rect x="8" y="8" width="1" height="1" fill="#b57c41"/><rect x="9" y="8" width="1" height="1" fill="#b57c41"/><rect x="10" y="8" width="1" height="1" fill="#b57c41"/><rect x="11" y="8" width="1" height="1" fill="#b57c41"/><rect x="12" y="8" width="1" height="1" fill="#b57c41"/><rect x="13" y="8" width="1" height="1" fill="#12150f"/><rect x="3" y="9" width="1" height="1" fill="#12150f"/><rect x="4" y="9" width="1" height="1" fill="#12150f"/><rect x="5" y="9" width="1" height="1" fill="#b57c41"/><rect x="6" y="9" width="1" height="1" fill="#b57c41"/><rect x="7" y="9" width="1" height="1" fill="#b57c41"/><rect x="8" y="9" width="1" height="1" fill="#b57c41"/><rect x="9" y="9" width="1" height="1" fill="#b57c41"/><rect x="10" y="9" width="1" height="1" fill="#b57c41"/><rect x="11" y="9" width="1" height="1" fill="#12150f"/><rect x="12" y="9" width="1" height="1" fill="#12150f"/><rect x="4" y="10" width="1" height="1" fill="#12150f"/><rect x="5" y="10" width="1" height="1" fill="#12150f"/><rect x="6" y="10" width="1" height="1" fill="#12150f"/><rect x="7" y="10" width="1" height="1" fill="#12150f"/><rect x="8" y="10" width="1" height="1" fill="#12150f"/><rect x="9" y="10" width="1" height="1" fill="#12150f"/><rect x="10" y="10" width="1" height="1" fill="#12150f"/><rect x="11" y="10" width="1" height="1" fill="#12150f"/><rect x="4" y="11" width="1" height="1" fill="#12150f"/><rect x="5" y="11" width="1" height="1" fill="#ffe2a0"/><rect x="6" y="11" width="1" height="1" fill="#ffe2a0"/><rect x="7" y="11" width="1" height="1" fill="#12150f"/><rect x="8" y="11" width="1" height="1" fill="#12150f"/><rect x="9" y="11" width="1" height="1" fill="#b57c41"/><rect x="10" y="11" width="1" height="1" fill="#b57c41"/><rect x="11" y="11" width="1" height="1" fill="#12150f"/><rect x="4" y="12" width="1" height="1" fill="#12150f"/><rect x="5" y="12" width="1" height="1" fill="#ffe2a0"/><rect x="6" y="12" width="1" height="1" fill="#ffe2a0"/><rect x="7" y="12" width="1" height="1" fill="#12150f"/><rect x="9" y="12" width="1" height="1" fill="#12150f"/><rect x="10" y="12" width="1" height="1" fill="#b57c41"/><rect x="11" y="12" width="1" height="1" fill="#12150f"/><rect x="4" y="13" width="1" height="1" fill="#12150f"/><rect x="5" y="13" width="1" height="1" fill="#ffe2a0"/><rect x="6" y="13" width="1" height="1" fill="#12150f"/><rect x="10" y="13" width="1" height="1" fill="#b57c41"/><rect x="11" y="13" width="1" height="1" fill="#12150f"/><rect x="4" y="14" width="1" height="1" fill="#12150f"/><rect x="5" y="14" width="1" height="1" fill="#12150f"/><rect x="10" y="14" width="1" height="1" fill="#12150f"/><rect x="11" y="14" width="1" height="1" fill="#12150f"/></svg><span><span class="mmButtonTitle">BADGES</span><small>Earn your honors</small></span></button>
+            <button class="btn mmTile" id="btnLb" aria-label="Leaderboards"><svg class="pixelIcon pixel-leaderboards" viewBox="0 0 16 16" width="32" height="32" preserveAspectRatio="xMidYMid meet" shape-rendering="crispEdges" aria-hidden="true" focusable="false"><rect x="3" y="1" width="1" height="1" fill="#12150f"/><rect x="4" y="1" width="1" height="1" fill="#12150f"/><rect x="5" y="1" width="1" height="1" fill="#12150f"/><rect x="6" y="1" width="1" height="1" fill="#12150f"/><rect x="7" y="1" width="1" height="1" fill="#12150f"/><rect x="8" y="1" width="1" height="1" fill="#12150f"/><rect x="9" y="1" width="1" height="1" fill="#12150f"/><rect x="10" y="1" width="1" height="1" fill="#12150f"/><rect x="11" y="1" width="1" height="1" fill="#12150f"/><rect x="12" y="1" width="1" height="1" fill="#12150f"/><rect x="3" y="2" width="1" height="1" fill="#12150f"/><rect x="4" y="2" width="1" height="1" fill="#ffe2a0"/><rect x="5" y="2" width="1" height="1" fill="#ffe2a0"/><rect x="6" y="2" width="1" height="1" fill="#ffe2a0"/><rect x="7" y="2" width="1" height="1" fill="#ffe2a0"/><rect x="8" y="2" width="1" height="1" fill="#ffe2a0"/><rect x="9" y="2" width="1" height="1" fill="#ffe2a0"/><rect x="10" y="2" width="1" height="1" fill="#ffe2a0"/><rect x="11" y="2" width="1" height="1" fill="#ffe2a0"/><rect x="12" y="2" width="1" height="1" fill="#12150f"/><rect x="1" y="3" width="1" height="1" fill="#12150f"/><rect x="2" y="3" width="1" height="1" fill="#12150f"/><rect x="3" y="3" width="1" height="1" fill="#12150f"/><rect x="4" y="3" width="1" height="1" fill="#ffe2a0"/><rect x="5" y="3" width="1" height="1" fill="#ffe2a0"/><rect x="6" y="3" width="1" height="1" fill="#ffe2a0"/><rect x="7" y="3" width="1" height="1" fill="#ffe2a0"/><rect x="8" y="3" width="1" height="1" fill="#ffe2a0"/><rect x="9" y="3" width="1" height="1" fill="#ffe2a0"/><rect x="10" y="3" width="1" height="1" fill="#ffe2a0"/><rect x="11" y="3" width="1" height="1" fill="#ffe2a0"/><rect x="12" y="3" width="1" height="1" fill="#12150f"/><rect x="13" y="3" width="1" height="1" fill="#12150f"/><rect x="14" y="3" width="1" height="1" fill="#12150f"/><rect x="1" y="4" width="1" height="1" fill="#12150f"/><rect x="2" y="4" width="1" height="1" fill="#ffe2a0"/><rect x="3" y="4" width="1" height="1" fill="#12150f"/><rect x="4" y="4" width="1" height="1" fill="#ffe2a0"/><rect x="5" y="4" width="1" height="1" fill="#ffe2a0"/><rect x="6" y="4" width="1" height="1" fill="#ffe2a0"/><rect x="7" y="4" width="1" height="1" fill="#ffe2a0"/><rect x="8" y="4" width="1" height="1" fill="#ffe2a0"/><rect x="9" y="4" width="1" height="1" fill="#ffe2a0"/><rect x="10" y="4" width="1" height="1" fill="#ffe2a0"/><rect x="11" y="4" width="1" height="1" fill="#ffe2a0"/><rect x="12" y="4" width="1" height="1" fill="#12150f"/><rect x="13" y="4" width="1" height="1" fill="#ffe2a0"/><rect x="14" y="4" width="1" height="1" fill="#12150f"/><rect x="1" y="5" width="1" height="1" fill="#12150f"/><rect x="2" y="5" width="1" height="1" fill="#ffe2a0"/><rect x="3" y="5" width="1" height="1" fill="#12150f"/><rect x="4" y="5" width="1" height="1" fill="#ffe2a0"/><rect x="5" y="5" width="1" height="1" fill="#ffe2a0"/><rect x="6" y="5" width="1" height="1" fill="#ffe2a0"/><rect x="7" y="5" width="1" height="1" fill="#ffe2a0"/><rect x="8" y="5" width="1" height="1" fill="#ffe2a0"/><rect x="9" y="5" width="1" height="1" fill="#ffe2a0"/><rect x="10" y="5" width="1" height="1" fill="#ffe2a0"/><rect x="11" y="5" width="1" height="1" fill="#ffe2a0"/><rect x="12" y="5" width="1" height="1" fill="#12150f"/><rect x="13" y="5" width="1" height="1" fill="#ffe2a0"/><rect x="14" y="5" width="1" height="1" fill="#12150f"/><rect x="1" y="6" width="1" height="1" fill="#12150f"/><rect x="2" y="6" width="1" height="1" fill="#ffe2a0"/><rect x="3" y="6" width="1" height="1" fill="#12150f"/><rect x="4" y="6" width="1" height="1" fill="#12150f"/><rect x="5" y="6" width="1" height="1" fill="#ffe2a0"/><rect x="6" y="6" width="1" height="1" fill="#ffe2a0"/><rect x="7" y="6" width="1" height="1" fill="#ffe2a0"/><rect x="8" y="6" width="1" height="1" fill="#ffe2a0"/><rect x="9" y="6" width="1" height="1" fill="#ffe2a0"/><rect x="10" y="6" width="1" height="1" fill="#ffe2a0"/><rect x="11" y="6" width="1" height="1" fill="#12150f"/><rect x="12" y="6" width="1" height="1" fill="#12150f"/><rect x="13" y="6" width="1" height="1" fill="#ffe2a0"/><rect x="14" y="6" width="1" height="1" fill="#12150f"/><rect x="2" y="7" width="1" height="1" fill="#12150f"/><rect x="3" y="7" width="1" height="1" fill="#12150f"/><rect x="4" y="7" width="1" height="1" fill="#12150f"/><rect x="5" y="7" width="1" height="1" fill="#ffe2a0"/><rect x="6" y="7" width="1" height="1" fill="#ffe2a0"/><rect x="7" y="7" width="1" height="1" fill="#ffe2a0"/><rect x="8" y="7" width="1" height="1" fill="#ffe2a0"/><rect x="9" y="7" width="1" height="1" fill="#ffe2a0"/><rect x="10" y="7" width="1" height="1" fill="#ffe2a0"/><rect x="11" y="7" width="1" height="1" fill="#ffe2a0"/><rect x="12" y="7" width="1" height="1" fill="#12150f"/><rect x="13" y="7" width="1" height="1" fill="#12150f"/><rect x="14" y="7" width="1" height="1" fill="#12150f"/><rect x="4" y="8" width="1" height="1" fill="#12150f"/><rect x="5" y="8" width="1" height="1" fill="#12150f"/><rect x="6" y="8" width="1" height="1" fill="#b57c41"/><rect x="7" y="8" width="1" height="1" fill="#b57c41"/><rect x="8" y="8" width="1" height="1" fill="#b57c41"/><rect x="9" y="8" width="1" height="1" fill="#b57c41"/><rect x="10" y="8" width="1" height="1" fill="#12150f"/><rect x="11" y="8" width="1" height="1" fill="#12150f"/><rect x="5" y="9" width="1" height="1" fill="#12150f"/><rect x="6" y="9" width="1" height="1" fill="#12150f"/><rect x="7" y="9" width="1" height="1" fill="#b57c41"/><rect x="8" y="9" width="1" height="1" fill="#b57c41"/><rect x="9" y="9" width="1" height="1" fill="#12150f"/><rect x="10" y="9" width="1" height="1" fill="#12150f"/><rect x="6" y="10" width="1" height="1" fill="#12150f"/><rect x="7" y="10" width="1" height="1" fill="#ffe2a0"/><rect x="8" y="10" width="1" height="1" fill="#ffe2a0"/><rect x="9" y="10" width="1" height="1" fill="#12150f"/><rect x="6" y="11" width="1" height="1" fill="#12150f"/><rect x="7" y="11" width="1" height="1" fill="#ffe2a0"/><rect x="8" y="11" width="1" height="1" fill="#ffe2a0"/><rect x="9" y="11" width="1" height="1" fill="#12150f"/><rect x="4" y="12" width="1" height="1" fill="#12150f"/><rect x="5" y="12" width="1" height="1" fill="#12150f"/><rect x="6" y="12" width="1" height="1" fill="#12150f"/><rect x="7" y="12" width="1" height="1" fill="#ffe2a0"/><rect x="8" y="12" width="1" height="1" fill="#ffe2a0"/><rect x="9" y="12" width="1" height="1" fill="#12150f"/><rect x="10" y="12" width="1" height="1" fill="#12150f"/><rect x="11" y="12" width="1" height="1" fill="#12150f"/><rect x="4" y="13" width="1" height="1" fill="#12150f"/><rect x="5" y="13" width="1" height="1" fill="#ffe2a0"/><rect x="6" y="13" width="1" height="1" fill="#ffe2a0"/><rect x="7" y="13" width="1" height="1" fill="#ffe2a0"/><rect x="8" y="13" width="1" height="1" fill="#ffe2a0"/><rect x="9" y="13" width="1" height="1" fill="#ffe2a0"/><rect x="10" y="13" width="1" height="1" fill="#ffe2a0"/><rect x="11" y="13" width="1" height="1" fill="#12150f"/><rect x="4" y="14" width="1" height="1" fill="#12150f"/><rect x="5" y="14" width="1" height="1" fill="#12150f"/><rect x="6" y="14" width="1" height="1" fill="#12150f"/><rect x="7" y="14" width="1" height="1" fill="#12150f"/><rect x="8" y="14" width="1" height="1" fill="#12150f"/><rect x="9" y="14" width="1" height="1" fill="#12150f"/><rect x="10" y="14" width="1" height="1" fill="#12150f"/><rect x="11" y="14" width="1" height="1" fill="#12150f"/></svg><span><span class="mmButtonTitle">LEADERBOARDS</span><small>Enter the Ember Hall</small></span></button>
+          </div>
+          <div class="mmUtility">
+            <button class="btn" id="btnSettings"><svg class="pixelIcon pixel-settings" viewBox="0 0 16 16" width="32" height="32" preserveAspectRatio="xMidYMid meet" shape-rendering="crispEdges" aria-hidden="true" focusable="false"><rect x="6" y="0" width="1" height="1" fill="#12150f"/><rect x="7" y="0" width="1" height="1" fill="#12150f"/><rect x="8" y="0" width="1" height="1" fill="#12150f"/><rect x="9" y="0" width="1" height="1" fill="#12150f"/><rect x="6" y="1" width="1" height="1" fill="#12150f"/><rect x="7" y="1" width="1" height="1" fill="#ffe2a0"/><rect x="8" y="1" width="1" height="1" fill="#ffe2a0"/><rect x="9" y="1" width="1" height="1" fill="#12150f"/><rect x="2" y="2" width="1" height="1" fill="#12150f"/><rect x="3" y="2" width="1" height="1" fill="#12150f"/><rect x="6" y="2" width="1" height="1" fill="#12150f"/><rect x="7" y="2" width="1" height="1" fill="#ffe2a0"/><rect x="8" y="2" width="1" height="1" fill="#ffe2a0"/><rect x="9" y="2" width="1" height="1" fill="#12150f"/><rect x="12" y="2" width="1" height="1" fill="#12150f"/><rect x="13" y="2" width="1" height="1" fill="#12150f"/><rect x="1" y="3" width="1" height="1" fill="#12150f"/><rect x="2" y="3" width="1" height="1" fill="#ffe2a0"/><rect x="3" y="3" width="1" height="1" fill="#ffe2a0"/><rect x="4" y="3" width="1" height="1" fill="#12150f"/><rect x="5" y="3" width="1" height="1" fill="#12150f"/><rect x="6" y="3" width="1" height="1" fill="#12150f"/><rect x="7" y="3" width="1" height="1" fill="#ffe2a0"/><rect x="8" y="3" width="1" height="1" fill="#ffe2a0"/><rect x="9" y="3" width="1" height="1" fill="#12150f"/><rect x="10" y="3" width="1" height="1" fill="#12150f"/><rect x="11" y="3" width="1" height="1" fill="#12150f"/><rect x="12" y="3" width="1" height="1" fill="#ffe2a0"/><rect x="13" y="3" width="1" height="1" fill="#ffe2a0"/><rect x="14" y="3" width="1" height="1" fill="#12150f"/><rect x="1" y="4" width="1" height="1" fill="#12150f"/><rect x="2" y="4" width="1" height="1" fill="#ffe2a0"/><rect x="3" y="4" width="1" height="1" fill="#ffe2a0"/><rect x="4" y="4" width="1" height="1" fill="#ffe2a0"/><rect x="5" y="4" width="1" height="1" fill="#ffe2a0"/><rect x="6" y="4" width="1" height="1" fill="#ffe2a0"/><rect x="7" y="4" width="1" height="1" fill="#ffe2a0"/><rect x="8" y="4" width="1" height="1" fill="#ffe2a0"/><rect x="9" y="4" width="1" height="1" fill="#ffe2a0"/><rect x="10" y="4" width="1" height="1" fill="#ffe2a0"/><rect x="11" y="4" width="1" height="1" fill="#ffe2a0"/><rect x="12" y="4" width="1" height="1" fill="#ffe2a0"/><rect x="13" y="4" width="1" height="1" fill="#ffe2a0"/><rect x="14" y="4" width="1" height="1" fill="#12150f"/><rect x="2" y="5" width="1" height="1" fill="#12150f"/><rect x="3" y="5" width="1" height="1" fill="#ffe2a0"/><rect x="4" y="5" width="1" height="1" fill="#ffe2a0"/><rect x="5" y="5" width="1" height="1" fill="#12150f"/><rect x="6" y="5" width="1" height="1" fill="#12150f"/><rect x="7" y="5" width="1" height="1" fill="#12150f"/><rect x="8" y="5" width="1" height="1" fill="#12150f"/><rect x="9" y="5" width="1" height="1" fill="#12150f"/><rect x="10" y="5" width="1" height="1" fill="#12150f"/><rect x="11" y="5" width="1" height="1" fill="#ffe2a0"/><rect x="12" y="5" width="1" height="1" fill="#ffe2a0"/><rect x="13" y="5" width="1" height="1" fill="#12150f"/><rect x="0" y="6" width="1" height="1" fill="#12150f"/><rect x="1" y="6" width="1" height="1" fill="#12150f"/><rect x="2" y="6" width="1" height="1" fill="#12150f"/><rect x="3" y="6" width="1" height="1" fill="#ffe2a0"/><rect x="4" y="6" width="1" height="1" fill="#12150f"/><rect x="5" y="6" width="1" height="1" fill="#12150f"/><rect x="10" y="6" width="1" height="1" fill="#12150f"/><rect x="11" y="6" width="1" height="1" fill="#12150f"/><rect x="12" y="6" width="1" height="1" fill="#ffe2a0"/><rect x="13" y="6" width="1" height="1" fill="#12150f"/><rect x="14" y="6" width="1" height="1" fill="#12150f"/><rect x="15" y="6" width="1" height="1" fill="#12150f"/><rect x="0" y="7" width="1" height="1" fill="#12150f"/><rect x="1" y="7" width="1" height="1" fill="#ffe2a0"/><rect x="2" y="7" width="1" height="1" fill="#ffe2a0"/><rect x="3" y="7" width="1" height="1" fill="#ffe2a0"/><rect x="4" y="7" width="1" height="1" fill="#12150f"/><rect x="5" y="7" width="1" height="1" fill="#12150f"/><rect x="10" y="7" width="1" height="1" fill="#12150f"/><rect x="11" y="7" width="1" height="1" fill="#12150f"/><rect x="12" y="7" width="1" height="1" fill="#ffe2a0"/><rect x="13" y="7" width="1" height="1" fill="#ffe2a0"/><rect x="14" y="7" width="1" height="1" fill="#ffe2a0"/><rect x="15" y="7" width="1" height="1" fill="#12150f"/><rect x="0" y="8" width="1" height="1" fill="#12150f"/><rect x="1" y="8" width="1" height="1" fill="#ffe2a0"/><rect x="2" y="8" width="1" height="1" fill="#ffe2a0"/><rect x="3" y="8" width="1" height="1" fill="#ffe2a0"/><rect x="4" y="8" width="1" height="1" fill="#12150f"/><rect x="5" y="8" width="1" height="1" fill="#12150f"/><rect x="10" y="8" width="1" height="1" fill="#12150f"/><rect x="11" y="8" width="1" height="1" fill="#12150f"/><rect x="12" y="8" width="1" height="1" fill="#ffe2a0"/><rect x="13" y="8" width="1" height="1" fill="#ffe2a0"/><rect x="14" y="8" width="1" height="1" fill="#ffe2a0"/><rect x="15" y="8" width="1" height="1" fill="#12150f"/><rect x="0" y="9" width="1" height="1" fill="#12150f"/><rect x="1" y="9" width="1" height="1" fill="#12150f"/><rect x="2" y="9" width="1" height="1" fill="#12150f"/><rect x="3" y="9" width="1" height="1" fill="#ffe2a0"/><rect x="4" y="9" width="1" height="1" fill="#12150f"/><rect x="5" y="9" width="1" height="1" fill="#12150f"/><rect x="10" y="9" width="1" height="1" fill="#12150f"/><rect x="11" y="9" width="1" height="1" fill="#12150f"/><rect x="12" y="9" width="1" height="1" fill="#ffe2a0"/><rect x="13" y="9" width="1" height="1" fill="#12150f"/><rect x="14" y="9" width="1" height="1" fill="#12150f"/><rect x="15" y="9" width="1" height="1" fill="#12150f"/><rect x="2" y="10" width="1" height="1" fill="#12150f"/><rect x="3" y="10" width="1" height="1" fill="#b57c41"/><rect x="4" y="10" width="1" height="1" fill="#b57c41"/><rect x="5" y="10" width="1" height="1" fill="#12150f"/><rect x="6" y="10" width="1" height="1" fill="#12150f"/><rect x="7" y="10" width="1" height="1" fill="#12150f"/><rect x="8" y="10" width="1" height="1" fill="#12150f"/><rect x="9" y="10" width="1" height="1" fill="#12150f"/><rect x="10" y="10" width="1" height="1" fill="#12150f"/><rect x="11" y="10" width="1" height="1" fill="#b57c41"/><rect x="12" y="10" width="1" height="1" fill="#b57c41"/><rect x="13" y="10" width="1" height="1" fill="#12150f"/><rect x="1" y="11" width="1" height="1" fill="#12150f"/><rect x="2" y="11" width="1" height="1" fill="#b57c41"/><rect x="3" y="11" width="1" height="1" fill="#b57c41"/><rect x="4" y="11" width="1" height="1" fill="#b57c41"/><rect x="5" y="11" width="1" height="1" fill="#b57c41"/><rect x="6" y="11" width="1" height="1" fill="#b57c41"/><rect x="7" y="11" width="1" height="1" fill="#b57c41"/><rect x="8" y="11" width="1" height="1" fill="#b57c41"/><rect x="9" y="11" width="1" height="1" fill="#b57c41"/><rect x="10" y="11" width="1" height="1" fill="#b57c41"/><rect x="11" y="11" width="1" height="1" fill="#b57c41"/><rect x="12" y="11" width="1" height="1" fill="#b57c41"/><rect x="13" y="11" width="1" height="1" fill="#b57c41"/><rect x="14" y="11" width="1" height="1" fill="#12150f"/><rect x="1" y="12" width="1" height="1" fill="#12150f"/><rect x="2" y="12" width="1" height="1" fill="#b57c41"/><rect x="3" y="12" width="1" height="1" fill="#b57c41"/><rect x="4" y="12" width="1" height="1" fill="#12150f"/><rect x="5" y="12" width="1" height="1" fill="#12150f"/><rect x="6" y="12" width="1" height="1" fill="#12150f"/><rect x="7" y="12" width="1" height="1" fill="#b57c41"/><rect x="8" y="12" width="1" height="1" fill="#b57c41"/><rect x="9" y="12" width="1" height="1" fill="#12150f"/><rect x="10" y="12" width="1" height="1" fill="#12150f"/><rect x="11" y="12" width="1" height="1" fill="#12150f"/><rect x="12" y="12" width="1" height="1" fill="#b57c41"/><rect x="13" y="12" width="1" height="1" fill="#b57c41"/><rect x="14" y="12" width="1" height="1" fill="#12150f"/><rect x="2" y="13" width="1" height="1" fill="#12150f"/><rect x="3" y="13" width="1" height="1" fill="#12150f"/><rect x="6" y="13" width="1" height="1" fill="#12150f"/><rect x="7" y="13" width="1" height="1" fill="#b57c41"/><rect x="8" y="13" width="1" height="1" fill="#b57c41"/><rect x="9" y="13" width="1" height="1" fill="#12150f"/><rect x="12" y="13" width="1" height="1" fill="#12150f"/><rect x="13" y="13" width="1" height="1" fill="#12150f"/><rect x="6" y="14" width="1" height="1" fill="#12150f"/><rect x="7" y="14" width="1" height="1" fill="#b57c41"/><rect x="8" y="14" width="1" height="1" fill="#b57c41"/><rect x="9" y="14" width="1" height="1" fill="#12150f"/><rect x="6" y="15" width="1" height="1" fill="#12150f"/><rect x="7" y="15" width="1" height="1" fill="#12150f"/><rect x="8" y="15" width="1" height="1" fill="#12150f"/><rect x="9" y="15" width="1" height="1" fill="#12150f"/></svg> SETTINGS</button>
+            <button class="btn red" id="btnQuit"><svg class="pixelIcon pixel-quit" viewBox="0 0 16 16" width="32" height="32" preserveAspectRatio="xMidYMid meet" shape-rendering="crispEdges" aria-hidden="true" focusable="false"><rect x="2" y="1" width="1" height="1" fill="#12150f"/><rect x="3" y="1" width="1" height="1" fill="#12150f"/><rect x="4" y="1" width="1" height="1" fill="#12150f"/><rect x="5" y="1" width="1" height="1" fill="#12150f"/><rect x="6" y="1" width="1" height="1" fill="#12150f"/><rect x="7" y="1" width="1" height="1" fill="#12150f"/><rect x="8" y="1" width="1" height="1" fill="#12150f"/><rect x="9" y="1" width="1" height="1" fill="#12150f"/><rect x="2" y="2" width="1" height="1" fill="#12150f"/><rect x="3" y="2" width="1" height="1" fill="#ffe2a0"/><rect x="4" y="2" width="1" height="1" fill="#ffe2a0"/><rect x="5" y="2" width="1" height="1" fill="#ffe2a0"/><rect x="6" y="2" width="1" height="1" fill="#ffe2a0"/><rect x="7" y="2" width="1" height="1" fill="#ffe2a0"/><rect x="8" y="2" width="1" height="1" fill="#ffe2a0"/><rect x="9" y="2" width="1" height="1" fill="#12150f"/><rect x="2" y="3" width="1" height="1" fill="#12150f"/><rect x="3" y="3" width="1" height="1" fill="#ffe2a0"/><rect x="4" y="3" width="1" height="1" fill="#12150f"/><rect x="7" y="3" width="1" height="1" fill="#12150f"/><rect x="8" y="3" width="1" height="1" fill="#b57c41"/><rect x="9" y="3" width="1" height="1" fill="#12150f"/><rect x="2" y="4" width="1" height="1" fill="#12150f"/><rect x="3" y="4" width="1" height="1" fill="#ffe2a0"/><rect x="4" y="4" width="1" height="1" fill="#12150f"/><rect x="7" y="4" width="1" height="1" fill="#12150f"/><rect x="8" y="4" width="1" height="1" fill="#b57c41"/><rect x="9" y="4" width="1" height="1" fill="#12150f"/><rect x="12" y="4" width="1" height="1" fill="#12150f"/><rect x="2" y="5" width="1" height="1" fill="#12150f"/><rect x="3" y="5" width="1" height="1" fill="#ffe2a0"/><rect x="4" y="5" width="1" height="1" fill="#12150f"/><rect x="7" y="5" width="1" height="1" fill="#12150f"/><rect x="8" y="5" width="1" height="1" fill="#b57c41"/><rect x="9" y="5" width="1" height="1" fill="#12150f"/><rect x="12" y="5" width="1" height="1" fill="#ffe2a0"/><rect x="13" y="5" width="1" height="1" fill="#12150f"/><rect x="2" y="6" width="1" height="1" fill="#12150f"/><rect x="3" y="6" width="1" height="1" fill="#ffe2a0"/><rect x="4" y="6" width="1" height="1" fill="#12150f"/><rect x="7" y="6" width="1" height="1" fill="#12150f"/><rect x="8" y="6" width="1" height="1" fill="#12150f"/><rect x="9" y="6" width="1" height="1" fill="#12150f"/><rect x="10" y="6" width="1" height="1" fill="#12150f"/><rect x="11" y="6" width="1" height="1" fill="#12150f"/><rect x="12" y="6" width="1" height="1" fill="#ffe2a0"/><rect x="13" y="6" width="1" height="1" fill="#ffe2a0"/><rect x="14" y="6" width="1" height="1" fill="#12150f"/><rect x="2" y="7" width="1" height="1" fill="#12150f"/><rect x="3" y="7" width="1" height="1" fill="#ffe2a0"/><rect x="4" y="7" width="1" height="1" fill="#12150f"/><rect x="7" y="7" width="1" height="1" fill="#12150f"/><rect x="8" y="7" width="1" height="1" fill="#ffe2a0"/><rect x="9" y="7" width="1" height="1" fill="#ffe2a0"/><rect x="10" y="7" width="1" height="1" fill="#ffe2a0"/><rect x="11" y="7" width="1" height="1" fill="#ffe2a0"/><rect x="12" y="7" width="1" height="1" fill="#ffe2a0"/><rect x="13" y="7" width="1" height="1" fill="#b57c41"/><rect x="14" y="7" width="1" height="1" fill="#b57c41"/><rect x="15" y="7" width="1" height="1" fill="#12150f"/><rect x="2" y="8" width="1" height="1" fill="#12150f"/><rect x="3" y="8" width="1" height="1" fill="#ffe2a0"/><rect x="4" y="8" width="1" height="1" fill="#12150f"/><rect x="7" y="8" width="1" height="1" fill="#12150f"/><rect x="8" y="8" width="1" height="1" fill="#12150f"/><rect x="9" y="8" width="1" height="1" fill="#12150f"/><rect x="10" y="8" width="1" height="1" fill="#12150f"/><rect x="11" y="8" width="1" height="1" fill="#12150f"/><rect x="12" y="8" width="1" height="1" fill="#b57c41"/><rect x="13" y="8" width="1" height="1" fill="#12150f"/><rect x="14" y="8" width="1" height="1" fill="#12150f"/><rect x="2" y="9" width="1" height="1" fill="#12150f"/><rect x="3" y="9" width="1" height="1" fill="#ffe2a0"/><rect x="4" y="9" width="1" height="1" fill="#12150f"/><rect x="7" y="9" width="1" height="1" fill="#12150f"/><rect x="8" y="9" width="1" height="1" fill="#b57c41"/><rect x="9" y="9" width="1" height="1" fill="#12150f"/><rect x="12" y="9" width="1" height="1" fill="#b57c41"/><rect x="13" y="9" width="1" height="1" fill="#12150f"/><rect x="2" y="10" width="1" height="1" fill="#12150f"/><rect x="3" y="10" width="1" height="1" fill="#ffe2a0"/><rect x="4" y="10" width="1" height="1" fill="#12150f"/><rect x="7" y="10" width="1" height="1" fill="#12150f"/><rect x="8" y="10" width="1" height="1" fill="#b57c41"/><rect x="9" y="10" width="1" height="1" fill="#12150f"/><rect x="12" y="10" width="1" height="1" fill="#12150f"/><rect x="2" y="11" width="1" height="1" fill="#12150f"/><rect x="3" y="11" width="1" height="1" fill="#ffe2a0"/><rect x="4" y="11" width="1" height="1" fill="#12150f"/><rect x="7" y="11" width="1" height="1" fill="#12150f"/><rect x="8" y="11" width="1" height="1" fill="#b57c41"/><rect x="9" y="11" width="1" height="1" fill="#12150f"/><rect x="2" y="12" width="1" height="1" fill="#12150f"/><rect x="3" y="12" width="1" height="1" fill="#ffe2a0"/><rect x="4" y="12" width="1" height="1" fill="#ffe2a0"/><rect x="5" y="12" width="1" height="1" fill="#ffe2a0"/><rect x="6" y="12" width="1" height="1" fill="#ffe2a0"/><rect x="7" y="12" width="1" height="1" fill="#ffe2a0"/><rect x="8" y="12" width="1" height="1" fill="#b57c41"/><rect x="9" y="12" width="1" height="1" fill="#12150f"/><rect x="2" y="13" width="1" height="1" fill="#12150f"/><rect x="3" y="13" width="1" height="1" fill="#12150f"/><rect x="4" y="13" width="1" height="1" fill="#12150f"/><rect x="5" y="13" width="1" height="1" fill="#12150f"/><rect x="6" y="13" width="1" height="1" fill="#12150f"/><rect x="7" y="13" width="1" height="1" fill="#12150f"/><rect x="8" y="13" width="1" height="1" fill="#12150f"/><rect x="9" y="13" width="1" height="1" fill="#12150f"/></svg> QUIT</button>
+          </div>
+        </nav>
+      </div>
+      <footer class="mmProfile">
+        <div class="mmCommander"><span class="mmProfileIcon" aria-hidden="true"><svg class="pixelCrest" viewBox="0 0 24 24" width="96" height="96" shape-rendering="crispEdges" aria-hidden="true" focusable="false"><path fill="#11150f" d="M2 1h20v16h-2v2h-2v2h-3v2H9v-2H6v-2H4v-2H2z"/><path fill="#c6914f" d="M3 2h18v14h-2v2h-2v2h-3v2h-4v-2H7v-2H5v-2H3z"/><path fill="#ffe0a0" d="M3 2h18v2H3zM3 4h2v12H3z"/><path fill="#343b2a" d="M5 4h14v11h-2v2h-2v2H9v-2H7v-2H5z"/><path fill="#d88639" d="M6 6h3v5h2v3h2v-3h2V6h3v6h-2v4h-3v2h-2v-2H8v-4H6z"/><path fill="#fff0bc" d="M6 6h3v3H6zM15 6h3v3h-3z"/><path fill="#f5bd64" d="M6 9h3v2h2v3h2v-3h2V9h3v3h-2v4H8v-4H6z"/></svg></span><div><span class="mmProfileLabel">COMMANDER</span><span id="mmUser">DEFENDER</span></div></div>
+        <div class="mmGold"><span class="mmProfileLabel">GOLD</span><span><span class="coin" aria-hidden="true"></span><span id="mmGold">0</span></span></div>
+        <div class="lvlBar"><div class="mmXpHeading"><span id="mmLvl">LVL 1</span><span id="mmLvlTxt">0 / 150 XP</span></div><div class="lbTrack" role="progressbar" aria-label="Level progress" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><div id="mmLvlFill"></div></div></div>
+        <div class="mmSyncSlot" id="mmSyncSlot"></div>
+      </footer>
+    </div>
+  </div>
+
+  <!-- MAP SELECT -->
+  <div class="overlay" id="mapMenu"><div class="menu panel" style="max-width:760px">
+    <header class="scrHead">
+      <div><div class="scrEyebrow">DEPLOYMENT</div><h2>SELECT MAP</h2>
+        <div class="sub">WHERE WILL YOU MAKE YOUR STAND?</div></div>
+      <button class="btn red xBtn" id="mapBack" title="Back" aria-label="Back to main menu">&times;</button>
+    </header>
+    <div class="mapGrid" id="mapGrid"></div>
+  </div></div>
+
+  <!-- MODE SELECT -->
+  <div class="overlay" id="modeMenu"><div class="menu panel" style="max-width:640px">
+    <header class="scrHead">
+      <div><div class="scrEyebrow">RULES OF ENGAGEMENT</div><h2 id="modeTitle">TEST PLACE</h2>
+        <div class="sub">CHOOSE YOUR DIFFICULTY</div></div>
+      <button class="btn red xBtn" id="modeBack" title="Back" aria-label="Back to map select">&times;</button>
+    </header>
+    <div class="modeGrid" id="modeGrid"></div>
+  </div></div>
+
+  <!-- MULTIPLAYER MENU -->
+  <div class="overlay" id="mpMenu"><div class="menu panel" style="max-width:620px">
+    <header class="scrHead">
+      <div><div class="scrEyebrow">ONLINE</div><h2>MULTIPLAYER</h2>
+        <div class="sub">ONE DEFENDS THE EMBER &mdash; ONE SENDS EVERYTHING AT IT</div></div>
+      <button class="btn red xBtn" id="mpBack" title="Back" aria-label="Back to main menu">&times;</button>
+    </header>
+    <div class="btnRow">
+      <button class="btn gold" id="mpCreate">CREATE LOBBY</button>
+      <button class="btn" id="mpJoin">JOIN BY CODE</button>
+    </div>
+    <div id="mpJoinRow">
+      <input id="mpCodeInput" placeholder="LOBBY CODE" maxlength="10" autocomplete="off" spellcheck="false">
+      <button class="btn gold" id="mpJoinGo">GO</button>
+    </div>
+    <div class="secLabel">OPEN LOBBIES</div>
+    <div id="roomBrowser">
+      <input id="roomSearch" placeholder="SEARCH LOBBIES..." autocomplete="off" spellcheck="false">
+      <div id="roomList"></div>
+    </div>
+    <div class="scrFoot"><span class="scrStatus" id="mpStatus"></span></div>
+  </div></div>
+
+  <!-- CREATE LOBBY (mode + name + optional password) -->
+  <div class="overlay" id="mpCreateModal"><div class="menu panel" style="max-width:460px">
+    <header class="scrHead">
+      <div><div class="scrEyebrow">HOST A MATCH</div><h2>CREATE LOBBY</h2></div>
+      <button class="btn red xBtn" id="mpCreateCancel" title="Cancel" aria-label="Cancel">&times;</button>
+    </header>
+    <div class="setrow"><label>Mode</label>
+      <div class="segBtns" id="mpCreateMode">
+        <button class="btn tgl on" data-mode="pvp">PVP</button>
+        <button class="btn tgl" data-mode="coop"><i class="icLock"></i>CO-OP</button>
+      </div>
+    </div>
+    <div class="setStack">
+      <label class="fldLabel" for="roomName">Room name</label>
+      <input id="roomName" maxlength="24" placeholder="My room" autocomplete="off" spellcheck="false">
+    </div>
+    <div class="setStack">
+      <label class="fldLabel" for="roomPass">Password <span class="fldOpt">optional</span></label>
+      <input id="roomPass" type="password" maxlength="40" placeholder="Leave empty for none" autocomplete="off">
+    </div>
+    <div class="scrFoot"><button class="btn gold" id="mpCreateGo">CREATE</button></div>
+  </div></div>
+
+  <!-- LOBBY PASSWORD PROMPT -->
+  <div class="overlay" id="pwPrompt"><div class="menu panel" style="max-width:420px">
+    <header class="scrHead">
+      <div><div class="scrEyebrow"><i class="icLock"></i>LOCKED LOBBY</div>
+        <h2 id="pwRoom">LOBBY</h2></div>
+    </header>
+    <input id="pwInput" type="password" maxlength="40" placeholder="LOBBY PASSWORD" autocomplete="off">
+    <div class="scrFoot"><button class="btn gold" id="pwGo">JOIN</button>
+      <button class="btn" id="pwCancel">CANCEL</button></div>
+  </div></div>
+
+  <!-- MP GAME MODE (after Create Lobby) -->
+  <div class="overlay" id="mpModeMenu"><div class="menu panel" style="max-width:560px">
+    <header class="scrHead">
+      <div><div class="scrEyebrow">CHOOSE YOUR BATTLE</div><h2>GAME MODE</h2></div>
+      <button class="btn red xBtn" id="mpModeBack" title="Back" aria-label="Back">&times;</button>
+    </header>
+    <div class="modeGrid" id="mpModeGrid">
+      <button class="btn modeBtn" id="mpPvp"><span>PVP</span>
+        <small>1v1 &mdash; send enemies, or defend with towers</small></button>
+      <button class="btn modeBtn locked" id="mpCoop"><span>CO-OP</span>
+        <small>Two defenders, one ember</small>
+        <span class="modeMeta"><span class="chipTag"><i class="icLock"></i>COMING SOON</span></span></button>
+    </div>
+  </div></div>
+
+  <!-- MP LOBBY -->
+  <div class="overlay" id="mpLobby"><div class="menu panel mpLobbyPanel" style="max-width:600px">
+    <header class="scrHead">
+      <div><div class="scrEyebrow">STAGING AREA</div><h2>LOBBY</h2>
+        <div class="sub">SHARE THE CODE WITH YOUR OPPONENT</div></div>
+    </header>
+    <div class="mpCodeHero" id="mpCodeBox" title="Click to copy">
+      <span class="lbl">LOBBY CODE</span>
+      <span id="mpCode">-----</span>
+      <span class="copyHint">CLICK TO COPY</span>
+    </div>
+    <div class="mpLobbyCols">
+      <div class="mpPlayersSec">
+        <div class="secLabel">PLAYERS <span id="mpCount">1/2</span></div>
+        <div id="mpPlayers"></div>
+      </div>
+      <div class="mpMatchSec">
+        <div class="secLabel">MATCH</div>
+        <div class="mpMapRow"><span class="lbl">MAP</span>
+          <button class="btn" id="mpMap" title="More maps coming soon"><i class="icLock"></i>BASIC</button></div>
+        <div class="mpMapRow"><span class="lbl">MODE</span><span class="mpModeTag">PVP 1v1</span></div>
+      </div>
+    </div>
+    <div class="scrFoot">
+      <button class="btn gold" id="mpStart">START MATCH</button>
+      <button class="btn red" id="mpLeave">LEAVE</button>
+      <span class="scrStatus" id="mpLobbyStatus"></span></div>
+  </div></div>
+
+  <!-- SHOP -->
+  <div class="overlay" id="shopMenu"><div class="menu panel" style="max-width:820px">
+    <header class="scrHead">
+      <div><div class="scrEyebrow">ARSENAL</div><h2>SHOP</h2>
+        <div class="sub">GOLD SPENT HERE IS PERMANENT &mdash; TOWERS CARRY INTO EVERY MODE</div></div>
+      <div class="scrMeta"><div class="pill" id="shopLvl">LVL 1</div>
+        <div class="pill"><span class="coin"></span><span id="shopGold">0</span></div></div>
+      <button class="btn red xBtn" id="shopBack" title="Back" aria-label="Back to main menu">&times;</button>
+    </header>
+    <div class="secLabel">TOWERS</div>
+    <div class="cardGrid" id="shopGrid"></div>
+    <div class="secLabel">PRESTIGE<span> &middot; GILD A TOWER YOU ALREADY OWN</span></div>
+    <div class="cardGrid" id="prestigeGrid"></div>
+  </div></div>
+
+  <!-- INVENTORY -->
+  <div class="overlay" id="invMenu"><div class="menu panel" style="max-width:860px">
+    <header class="scrHead">
+      <div><div class="scrEyebrow">LOADOUT</div><h2>TOWERS</h2>
+        <div class="sub">SIX SLOTS GO INTO THE BATTLE</div></div>
+      <div class="scrMeta"><div class="pill" id="invLvl">LVL 1</div>
+        <div class="pill"><span class="coin"></span><span id="invGold">0</span></div></div>
+      <button class="btn red xBtn" id="invBack" title="Back" aria-label="Back to main menu">&times;</button>
+    </header>
+    <div id="invWrap">
+      <div id="loadoutCol">
+        <div class="secLabel">CURRENT LOADOUT</div>
+        <div class="loadoutGrid" id="loadoutGrid"></div>
+      </div>
+      <div id="invListCol">
+        <div class="secLabel">YOUR TOWERS</div>
+        <div id="invList"></div>
+      </div>
+    </div>
+  </div></div>
+
+  <!-- BADGES -->
+  <div class="overlay" id="badgesMenu"><div class="menu panel" style="max-width:620px">
+    <header class="scrHead">
+      <div><div class="scrEyebrow">HONOURS</div><h2>BADGES</h2>
+        <div class="sub">WHAT YOU HAVE DONE ON THE LINE</div></div>
+      <div class="scrMeta"><div class="pill" id="badgeCount">0 / 0</div></div>
+      <button class="btn red xBtn" id="badgesBack" title="Back" aria-label="Back to main menu">&times;</button>
+    </header>
+    <div class="cardGrid" id="badgeGrid"></div>
+  </div></div>
+
+  <!-- LEADERBOARDS -->
+  <div class="overlay" id="lbMenu"><div class="menu panel lbPanel">
+    <header class="lbHeader">
+      <div><div class="lbEyebrow">THE EMBER HALL</div><h2>LEADERBOARDS</h2></div>
+      <button class="btn red" id="lbBack" title="Back to main menu" aria-label="Back to main menu">&times;</button>
+    </header>
+    <div class="lbBody">
+      <nav class="lbNav" aria-label="Leaderboard categories">
+        <div class="lbNavLabel">RANKINGS</div>
+        <div class="lbGroups" id="lbGroups"></div>
+        <div class="lbNavLabel" id="lbModesLabel">DIFFICULTY / MODE</div>
+        <div class="lbTabs" id="lbTabs"></div>
+        <div class="lbNavNote">Every victory counts.<br>Earn your place among<br>the top 100.</div>
+      </nav>
+      <section class="lbContent" aria-labelledby="lbBoardTitle">
+        <div class="lbBoardHead">
+          <div><h3 id="lbBoardTitle">EASY WINS</h3><p id="lbBoardDesc">Most victories on Easy difficulty.</p></div>
+          <span class="lbTopBadge">TOP 100</span>
+        </div>
+        <div class="lbPodium" id="lbPodium" aria-label="Top three players" hidden></div>
+        <div class="lbTableHead"><span>RANK</span><span>PLAYER</span><span id="lbMetric">WINS</span></div>
+        <div id="lbList" aria-live="polite" aria-busy="false"></div>
+        <footer class="lbFooter">
+          <div class="lbPersonal"><span class="lbYou">YOUR RANK</span><strong id="lbMyRank">&mdash;</strong><span id="lbMyScore"></span></div>
+          <button class="btn" id="lbRefresh">REFRESH</button>
+        </footer>
+        <div id="lbHint" role="status">Rankings are saved online.</div>
+      </section>
+    </div>
+  </div></div>
+
+  <!-- SETTINGS -->
+  <div class="overlay" id="settingsMenu"><div class="menu panel" style="max-width:560px">
+    <header class="scrHead">
+      <div><div class="scrEyebrow">QUARTERS</div><h2>SETTINGS</h2>
+        <div class="sub">SOUND, DISPLAY AND YOUR CLOUD ACCOUNT</div></div>
+      <button class="btn red xBtn" id="setBack" title="Back" aria-label="Back">&times;</button>
+    </header>
+    <div class="secLabel">AUDIO</div>
+    <div class="setrow"><label>Master volume</label><input type="range" id="setVol" min="0" max="100" value="70"></div>
+    <div class="setrow"><label>Music volume</label><input type="range" id="setMusic" min="0" max="100" value="60"></div>
+    <div class="setrow"><label>Effects volume</label><input type="range" id="setSfx" min="0" max="100" value="80"></div>
+    <div class="secLabel">DISPLAY</div>
+    <div class="setrow"><label>UI scale<b id="setScaleV">1.00×</b></label><div class="segBtns" id="setScale">
+      <button class="btn tgl" data-s="0.85">S</button><button class="btn tgl on" data-s="1">M</button>
+      <button class="btn tgl" data-s="1.15">L</button><button class="btn tgl" data-s="1.3">XL</button></div></div>
+    <div class="setrow"><label>Particles</label><button class="btn tgl on" id="setPart">FULL</button></div>
+    <div class="setrow"><label>Screen shake</label><button class="btn tgl on" id="setShake">ON</button></div>
+    <div class="secLabel">CLOUD ACCOUNT</div>
+    <div class="setrow">
+      <div id="cloudInfo" class="cloudInfo">&hellip;</div>
+      <div class="segBtns">
+        <button class="btn gold" id="cloudPull">Load from Cloud</button>
+        <button class="btn red" id="cloudLogout">Sign Out</button></div>
+    </div>
+    <div class="setrow" id="setChanRow" style="display:none">
+      <label>Content channel</label>
+      <div class="segBtns" id="setChan">
+        <button class="btn tgl" data-ch="stable">LATEST STABLE</button>
+        <button class="btn tgl" data-ch="prerelease">LATEST PRE-RELEASE</button></div></div>
+    <div class="scrFoot">
+      <button class="btn red" id="setReset">Reset Progress</button>
+      <div class="grow"></div><span class="pill verRow">web</span></div>
+  </div></div>
+
+  <!-- SPEED VOTE (multiplayer) -->
+  <div class="overlay" id="voteOverlay" style="z-index:400"><div class="menu panel" style="max-width:400px">
+    <header class="scrHead">
+      <div><div class="scrEyebrow">MATCH VOTE</div><h2 style="font-size:19px">GAME SPEED</h2></div>
+    </header>
+    <div class="center" id="voteText" style="color:#c9bca0;margin-bottom:8px"></div>
+    <div class="center voteCount" id="voteCount"></div>
+    <div class="scrFoot">
+      <button class="btn gold" id="voteYes">YES</button>
+      <button class="btn red" id="voteNo">NO</button></div>
+  </div></div>
+
+  <!-- PAUSE -->
+  <div class="overlay" id="pauseMenu"><div class="menu panel" style="max-width:420px">
+    <header class="scrHead">
+      <div><div class="scrEyebrow">THE LINE HOLDS</div><h2>PAUSED</h2>
+        <div class="sub" id="pWave">WAVE 1</div></div>
+    </header>
+    <div class="btnStack">
+      <button class="btn gold" id="pResume">RESUME</button>
+      <button class="btn" id="pSettings">SETTINGS</button>
+      <button class="btn" id="pRestart">RESTART</button>
+    </div>
+    <div class="scrFoot"><button class="btn red" id="pQuit">ABANDON MATCH</button></div>
+  </div></div>
+
+  <!-- SECRET CHALLENGE (endless wave 500) -->
+  <div class="overlay" id="challengeMenu" role="dialog" aria-modal="true" aria-labelledby="chTitle">
+    <div class="menu panel chBox">
+      <header class="scrHead">
+        <div><div class="scrEyebrow">ENDLESS &middot; WAVE 500 CLEARED</div>
+          <h2 id="chTitle">Accept secret challenge?</h2></div>
+      </header>
+      <p class="chNote">Something has been waiting past the end of the line. Wave 501 is the last
+        wave you will ever fight &mdash; and the match ends there.</p>
+      <div class="scrFoot">
+        <button class="btn gold" id="chYes">YES</button>
+        <button class="btn" id="chNo">NO</button></div>
+    </div>
+  </div>
+
+  <!-- END -->
+  <div class="overlay" id="endMenu">
+    <div class="endRays" aria-hidden="true"></div>
+    <div class="menu panel endCard" style="max-width:520px">
+      <div class="endGlow" aria-hidden="true"></div>
+      <canvas class="endCrest" id="endCrest" width="96" height="96" aria-hidden="true"></canvas>
+      <div class="endKicker" id="endKicker">MISSION COMPLETE</div>
+      <div class="endHead">
+        <span class="endRule"></span>
+        <h2 id="endTitle">VICTORY</h2>
+        <span class="endRule"></span>
+      </div>
+      <div class="center endSub" id="endSub"></div>
+      <div class="endPips" id="endPips" role="img"></div>
+      <div class="endVerdict" id="endVerdict"></div>
+      <div class="endMeter" id="endMeter"></div>
+      <div class="statgrid" id="endStats"></div>
+      <div class="scrFoot endFoot">
+        <button class="btn gold" id="endRestart">PLAY AGAIN</button>
+        <button class="btn" id="endMenuBtn">MAIN MENU</button></div>
+    </div>
+  </div>
+
+  <div id="twrInfo" class="panel">
+    <div id="tiHead">
+      <canvas width="56" height="56"></canvas>
+      <div class="tiT"><div class="nm"></div><div class="pr"></div><div class="traits" id="tiTraits"></div></div>
+      <button class="btn" id="tiClose">&times;</button>
+    </div>
+    <div class="sp-sec"><h4>BASE STATS</h4><div id="tiStats"></div></div>
+    <div class="sp-sec"><h4>DESCRIPTION</h4><div id="tiDesc"></div></div>
+  </div>
+
+  <!-- MP MATCH RESULT -->
+  <div class="overlay" id="mpEnd">
+    <div class="endRays" aria-hidden="true"></div>
+    <div class="menu panel endCard" style="max-width:520px">
+    <div class="endGlow" aria-hidden="true"></div>
+    <canvas class="endCrest" id="mpeCrest" width="96" height="96" aria-hidden="true"></canvas>
+    <div class="endKicker" id="mpeKicker">MULTIPLAYER &middot; PVP</div>
+    <div class="endHead">
+      <span class="endRule"></span>
+      <h2 id="mpeTitle">VICTORY</h2>
+      <span class="endRule"></span>
+    </div>
+    <div class="center endSub" id="mpeSub"></div>
+    <div class="endPips" id="mpePips" role="img"></div>
+    <div class="endVerdict" id="mpeVerdict"></div>
+    <div class="endMeter" id="mpeMeter"></div>
+    <div class="statgrid" id="mpeStats"></div>
+    <div class="scrFoot endFoot"><button class="btn gold" id="mpeBack">MAIN MENU</button></div>
+  </div></div>
+
+  <div class="overlay" id="confirmModal" style="z-index:60"><div class="menu panel" style="max-width:420px">
+    <header class="scrHead">
+      <div><div class="scrEyebrow">CONFIRM</div><h2 id="cfTitle">Are you sure?</h2></div>
+    </header>
+    <p class="cfMsg" id="cfMsg"></p>
+    <div class="scrFoot"><button class="btn red" id="cfYes">YES</button>
+      <button class="btn" id="cfNo">CANCEL</button></div>
+  </div></div>
+
+  <!-- DEVELOPER COMMAND BAR — never appears unless the signed-in account is a developer -->
+  <div id="cmdBar" role="dialog" aria-label="Developer command bar">
+    <div class="cmdRow">
+      <span class="cmdPrompt" aria-hidden="true">/</span>
+      <input id="cmdInput" placeholder="command &mdash; type help" autocomplete="off" spellcheck="false"
+        aria-label="Command" aria-controls="cmdSug" aria-expanded="false">
+      <span class="cmdRole" id="cmdRole">DEVELOPER</span>
+      <button class="cmdClose" id="cmdClose" type="button"
+        title="Close (Esc)" aria-label="Close command bar">&times;</button>
+    </div>
+    <div class="cmdHint" id="cmdHint"></div>
+    <div class="cmdSug" id="cmdSug" role="listbox" aria-label="Matching commands"></div>
+  </div>
+</div>
+</div>
+
+<!-- Load all modules in order -->
+<script src="js/channel.js" defer></script>
+<script src="js/utils.js" defer></script>
+<script src="js/config.js" defer></script>
+<script src="js/audio.js" defer></script>
+<script src="js/music.js" defer></script>
+<script src="js/save.js" defer></script>
+<script src="js/uiscale.js" defer></script>
+<script src="js/terrain.js" defer></script>
+<script src="js/map.js" defer></script>
+<script src="js/ashlands.js" defer></script>
+<script src="js/camera.js" defer></script>
+<script src="js/particles.js" defer></script>
+<script src="js/entities.js" defer></script>
+<script src="js/waves.js" defer></script>
+<script src="js/input.js" defer></script>
+<script src="js/visuals.js" defer></script>
+<script src="js/sprites.js" defer></script>
+<script src="js/artpack.js" defer></script>
+<script src="js/art.js" defer></script>
+<script src="js/ui.js" defer></script>
+<script src="js/screens.js" defer></script>
+<script src="js/mp.js" defer></script>
+<script src="js/update.js" defer></script>
+<script src="js/admin.js" defer></script>
+<script src="js/main.js" defer></script>
+</body>
+</html>
